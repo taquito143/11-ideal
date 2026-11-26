@@ -208,6 +208,13 @@
         }
       });
     });
+    // Coherencia: un expulsado no puede hacer goles ni ver amarillas despues de su roja.
+    eventos.forEach(function (r) {
+      if (r.tipo !== "roja") return;
+      eventos.forEach(function (e) {
+        if (e !== r && e.equipo === r.equipo && e.jugador === r.jugador && e.minuto >= r.minuto) r.minuto = Math.min(90, e.minuto + 1);
+      });
+    });
     eventos.sort(function (a, b) { return a.minuto - b.minuto; });
 
     return { resultado: res, golesL: gL, golesV: gV, eventos: eventos };
@@ -376,6 +383,7 @@
     var resultado = {
       tabla: tabla,
       partidos: partidosLiga,
+      equipos: equipos.reduce(function (m, e) { m[e.nombre] = e; return m; }, {}),
       nuestraPosicion: nuestraPosicion,
       clasificamos: nuestraPosicion <= CONFIG.clasificados,
       rondas: [],

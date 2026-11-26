@@ -511,7 +511,7 @@
     detenerReloj();
     estado.res = M.simularTorneo({ clubes: clubes, nuestro: nuestro, rng: M.crearRng((Date.now() ^ 0x9e3779b9) >>> 0) });
     estado.modo = "rapida";
-    estado.lenta = { indice: 0, minuto: 0, velocidad: "x4", timer: null, pausado: false };
+    estado.lenta = { indice: 0, minuto: 0, velocidad: "x4", timer: null, pausado: false, pestana: "relato" };
     el.resultado.hidden = false;
     pintarResultado();
     el.resultado.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -527,6 +527,12 @@
       b.addEventListener("click", function () { estado.modo = b.getAttribute("data-modo"); pintarResultado(); });
     });
     if (estado.modo === "lenta") prepararLenta();
+    else {
+      var lista = partidosNuestros(estado.res);
+      el.resultado.querySelectorAll("[data-partido]").forEach(function (b) {
+        b.addEventListener("click", function () { abrirFicha(lista[+b.getAttribute("data-partido")]); });
+      });
+    }
   }
 
   function renderRapida(res) {
@@ -540,7 +546,15 @@
       html += "<tr class=\"" + clases + "\"><td class=\"pos\">" + (i + 1) + "</td><td class=\"equipo\">" + esc(f.equipo.nombre) + "</td>" +
         "<td>" + f.pj + "</td><td>" + f.pg + "</td><td>" + f.pe + "</td><td>" + f.pp + "</td><td><strong>" + f.pts + "</strong></td><td>" + Math.round(f.equipo.puntaje) + "</td></tr>";
     });
-    html += "</tbody></table></div><h3>Cuadro final</h3><div class=\"cuadro\">";
+    html += "</tbody></table></div><h3>Nuestros partidos</h3><p class=\"ayuda\">Tocá un partido para ver el relato, las estadísticas y las formaciones.</p><div class=\"nuestros-partidos\">";
+    partidosNuestros(res).forEach(function (item, i) {
+      var p = item.partido, dif = p.local === "Nosotros" ? p.golesL - p.golesV : p.golesV - p.golesL;
+      var r = dif > 0 ? ["G", "gana"] : dif < 0 ? ["P", "pierde"] : ["E", "empata"];
+      html += "<button type=\"button\" class=\"fila-partido\" data-partido=\"" + i + "\"><span class=\"res-letra " + r[1] + "\">" + r[0] + "</span>" +
+        "<span class=\"fila-partido-titulo\">" + esc(item.titulo) + "</span><span class=\"fila-partido-marcador\">" + esc(p.local) + " <strong>" + p.golesL +
+        " - " + p.golesV + "</strong> " + esc(p.visitante) + "</span><span class=\"fila-partido-ir\" aria-hidden=\"true\">›</span></button>";
+    });
+    html += "</div><h3>Cuadro final</h3><div class=\"cuadro\">";
     if (!res.clasificamos) html += "<p class=\"ayuda\">No clasificamos al cuadro (quedamos fuera de los 16 mejores).</p>";
     res.rondas.forEach(function (ronda) {
       html += "<h3>" + esc(ronda.nombre) + "</h3>";
@@ -573,13 +587,122 @@
     return lista;
   }
 
-  var ICONO = { gol: "⚽", amarilla: "🟨", roja: "🟥" };
-  function textoEvento(e) {
-    if (e.tipo === "gol") return "¡Gol de " + e.jugador + "! (" + e.equipo + ")";
-    if (e.tipo === "amarilla") return "Tarjeta amarilla para " + e.jugador + " (" + e.equipo + ")";
-    if (e.tipo === "roja") return "¡Expulsado " + e.jugador + "! (" + e.equipo + ")";
-    return "";
+  // ---------- Relato, estadisticas y formaciones de un partido ----------
+  var R = window.RelatoOnceIdeal;
+  var ICONO = { gol: "⚽", atajada: "🧤", palo: "🥅", afuera: "↗", corner: "⛳", offside: "🚩", amarilla: "🟨", roja: "🟥", inicio: "▶", pausa: "⏸", final: "🏁" };
+  var PESTANAS = [["relato", "Relato"], ["estadisticas", "Estadísticas"], ["formaciones", "Formaciones"]];
+  var FILAS_STATS = [
+    ["remates", "Remates"], ["alArco", "Remates al arco"], ["atajadas", "Atajadas"], ["corners", "Córners"],
+    ["faltas", "Faltas"], ["offsides", "Offsides"], ["amarillas", "Amarillas"], ["rojas", "Rojas"]
+  ];
+
+  function relatoDe(p) {
+    if (!p._relato) p._relato = R.generar(p, estado.res.equipos[p.local], estado.res.equipos[p.visitante]);
+    return p._relato;
   }
+  // El relato hasta un minuto dado (para el partido en vivo).
+  function recorte(rel, minuto) {
+    return { lineas: rel.lineas.filter(function (l) { return l.minuto <= minuto; }), local: rel.local, visitante: rel.visitante, posesionL: rel.posesionL };
+  }
+  function colorEquipo(nombre) {
+    if (nombre === "Nosotros") return ["#2ecc71", "#0e0f12"];
+    return COLORES[nombre] || ["#4a505a", "#ffffff"];
+  }
+  function etiquetaEquipo(nombre) {
+    var c = colorEquipo(nombre);
+    var claro = /^#(f|e|d|7|2e)/i.test(c[0]);
+    return "<span class=\"tag-equipo\" style=\"background:" + c[0] + ";color:" + (claro ? "#111" : "#fff") + "\">" + esc(nombre) + "</span>";
+  }
+
+  function pestanasHTML(activa) {
+    return "<div class=\"pestanas\" role=\"tablist\">" + PESTANAS.map(function (t) {
+      return "<button type=\"button\" role=\"tab\" class=\"pestana" + (t[0] === activa ? " activa" : "") + "\" data-pestana=\"" + t[0] +
+        "\" aria-selected=\"" + (t[0] === activa) + "\">" + t[1] + "</button>";
+    }).join("") + "</div>";
+  }
+
+  function relatoHTML(rel, extras) {
+    var lineas = rel.lineas.filter(function (l) { return !l.silencioso; }).concat(extras || []);
+    lineas.sort(function (a, b) { return a.minuto - b.minuto || a.orden - b.orden; });
+    return "<div class=\"relato-lista\">" + lineas.reverse().map(function (l) {
+      return "<div class=\"evento " + l.tipo + "\"><span class=\"ev-min\">" + l.minuto + "'</span><span class=\"ev-ico\">" + (ICONO[l.tipo] || "") + "</span>" +
+        "<span class=\"ev-texto\">" + (l.equipo ? etiquetaEquipo(l.equipo) + " " : "") + esc(l.texto) + "</span></div>";
+    }).join("") + "</div>";
+  }
+
+  function filaStat(nombre, tL, tV, vL, vV) {
+    var tot = vL + vV, pL = tot ? vL / tot * 100 : 50;
+    var gL = vL > vV ? " gana" : "", gV = vV > vL ? " gana" : "";
+    return "<div class=\"stat\"><div class=\"stat-nums\"><span class=\"" + gL + "\">" + tL + "</span><span class=\"stat-nombre\">" + nombre +
+      "</span><span class=\"" + gV + "\">" + tV + "</span></div><div class=\"stat-barra\"><span class=\"l" + gL + "\" style=\"width:" + pL.toFixed(1) +
+      "%\"></span><span class=\"v" + gV + "\" style=\"width:" + (100 - pL).toFixed(1) + "%\"></span></div></div>";
+  }
+  function estadisticasHTML(rel) {
+    var e = R.estadisticas(rel);
+    var html = "<div class=\"stats\"><div class=\"stats-cabecera\">" + etiquetaEquipo(rel.local) + etiquetaEquipo(rel.visitante) + "</div>";
+    html += filaStat("Posesión", e.L.posesion + "%", e.V.posesion + "%", e.L.posesion, e.V.posesion);
+    FILAS_STATS.forEach(function (f) { html += filaStat(f[1], e.L[f[0]], e.V[f[0]], e.L[f[0]], e.V[f[0]]); });
+    return html + "</div>";
+  }
+
+  // 11 vs 11: los dos onces con su puntaje FIFA y lo que hizo cada uno en el partido.
+  function formacionesHTML(rel) {
+    var part = R.participacion(rel), fig = R.figura(rel);
+    function columna(nombre) {
+      var eq = estado.res.equipos[nombre];
+      var html = "<div class=\"once-col\"><div class=\"once-cabecera\">" + etiquetaEquipo(nombre) +
+        "<span class=\"once-total\" title=\"Puntaje del equipo\">" + Math.round(eq.puntaje) + "</span></div>";
+      ["ARQ", "DEF", "VOL", "DEL"].forEach(function (pos) {
+        eq.once.filter(function (j) { return j.pos === pos; }).forEach(function (j) {
+          var x = part[nombre + "|" + j.jugador] || {}, ic = "", g;
+          for (g = 0; g < (x.goles || 0); g++) ic += "⚽";
+          for (g = 0; g < (x.asistencias || 0); g++) ic += "👟";
+          if (x.amarillas) ic += "🟨";
+          if (x.rojas) ic += "🟥";
+          if (x.atajadas) ic += "🧤" + x.atajadas;
+          var esFig = fig && fig.equipo === nombre && fig.jugador === j.jugador;
+          html += "<div class=\"once-fila" + (esFig ? " figura" : "") + (x.rojas ? " expulsado" : "") + "\"><span class=\"once-pos\">" + pos + "</span>" +
+            "<span class=\"once-nombre\">" + esc(j.jugador) + (esFig ? " ⭐" : "") + "</span><span class=\"once-ic\">" + ic + "</span><span class=\"once-pts\">" + puntaje(j) + "</span></div>";
+        });
+      });
+      return html + "</div>";
+    }
+    var html = "";
+    if (fig) {
+      var d = fig.datos, logros = [];
+      if (d.goles) logros.push(d.goles + (d.goles > 1 ? " goles" : " gol"));
+      if (d.asistencias) logros.push(d.asistencias + (d.asistencias > 1 ? " asistencias" : " asistencia"));
+      if (d.atajadas) logros.push(d.atajadas + (d.atajadas > 1 ? " atajadas" : " atajada"));
+      html += "<div class=\"figura-partido\">⭐ Figura del partido: <strong>" + esc(fig.jugador) + "</strong> " + etiquetaEquipo(fig.equipo) +
+        (logros.length ? " <span class=\"gris\">(" + logros.join(", ") + ")</span>" : "") + "</div>";
+    }
+    return html + "<div class=\"once-vs\">" + columna(rel.local) + columna(rel.visitante) + "</div>" +
+      "<p class=\"ayuda\">El número es el puntaje FIFA de cada jugador. ⚽ gol · 👟 asistencia · 🧤 atajadas.</p>";
+  }
+
+  function contenidoFicha(pestana, rel, extras) {
+    if (pestana === "estadisticas") return estadisticasHTML(rel);
+    if (pestana === "formaciones") return formacionesHTML(rel);
+    return relatoHTML(rel, extras);
+  }
+  function extrasLlave(item, minuto) {
+    return item.ganadorLlave && minuto >= 90 ? [{ minuto: 90, orden: 4, tipo: "final", texto: "Pasa de ronda: " + item.ganadorLlave }] : [];
+  }
+
+  // Ficha completa de un partido ya jugado (desde la simulacion rapida).
+  function abrirFicha(item, pestana) {
+    var p = item.partido, rel = relatoDe(p), caja = $("ficha-contenido");
+    estado.ficha = { item: item, pestana: pestana || "relato" };
+    $("ficha-titulo").textContent = item.titulo;
+    caja.innerHTML = "<div class=\"vivo-marcador\"><span class=\"vivo-equipo" + (p.local === "Nosotros" ? " nuestro" : "") + "\">" + esc(p.local) + "</span>" +
+      "<span class=\"vivo-goles\">" + p.golesL + " - " + p.golesV + "</span><span class=\"vivo-equipo" + (p.visitante === "Nosotros" ? " nuestro" : "") + "\">" + esc(p.visitante) + "</span></div>" +
+      pestanasHTML(estado.ficha.pestana) + "<div class=\"ficha-cuerpo\">" + contenidoFicha(estado.ficha.pestana, rel, extrasLlave(item, 90)) + "</div>";
+    caja.querySelectorAll("[data-pestana]").forEach(function (b) {
+      b.addEventListener("click", function () { abrirFicha(item, b.getAttribute("data-pestana")); });
+    });
+    $("ficha-partido").hidden = false;
+  }
+  function cerrarFicha() { $("ficha-partido").hidden = true; }
 
   function renderLenta() {
     var lista = partidosNuestros(estado.res), L = estado.lenta;
@@ -595,7 +718,7 @@
       "<div class=\"vivo-acciones\"><button type=\"button\" class=\"boton secundario\" data-accion=\"pausa\">Pausa</button>" +
       "<button type=\"button\" class=\"boton secundario\" data-accion=\"final\">Ver final</button>" +
       "<button type=\"button\" class=\"boton principal\" data-accion=\"siguiente\" id=\"vivo-siguiente\" hidden>Siguiente partido ›</button></div>" +
-      "<div class=\"vivo-relato\" id=\"vivo-relato\"></div><div id=\"vivo-otros\"></div></div>";
+      pestanasHTML(L.pestana) + "<div class=\"vivo-relato\" id=\"vivo-relato\"></div><div id=\"vivo-otros\"></div></div>";
   }
 
   function prepararLenta() {
@@ -614,6 +737,17 @@
       L.pausado = !L.pausado;
       pausa.textContent = L.pausado ? "Reanudar" : "Pausa";
       if (L.pausado) detenerReloj(); else iniciarReloj();
+    });
+    el.resultado.querySelectorAll(".vivo [data-pestana]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        L.pestana = b.getAttribute("data-pestana");
+        el.resultado.querySelectorAll(".vivo [data-pestana]").forEach(function (x) {
+          var on = x.getAttribute("data-pestana") === L.pestana;
+          x.classList.toggle("activa", on);
+          x.setAttribute("aria-selected", String(on));
+        });
+        actualizarVivo();
+      });
     });
     el.resultado.querySelector("[data-accion=final]").addEventListener("click", function () { avanzarHasta(90); });
     el.resultado.querySelector("[data-accion=siguiente]").addEventListener("click", function () {
@@ -643,15 +777,7 @@
     if (!goles || !reloj || !relato) return;
     goles.textContent = gl + " - " + gv;
     reloj.textContent = L.minuto >= 90 ? "Final" : L.minuto + "'";
-    var lineas = [{ m: 0, o: 0, h: "<div class=\"evento inicio\">0' Comienza el partido</div>" }];
-    if (L.minuto >= 45) lineas.push({ m: 45, o: 2, h: "<div class=\"evento pausa\">45' Entretiempo</div>" });
-    vistos.forEach(function (e) { lineas.push({ m: e.minuto, o: 1, h: "<div class=\"evento " + e.tipo + "\">" + ICONO[e.tipo] + " " + e.minuto + "' " + esc(textoEvento(e)) + "</div>" }); });
-    if (L.minuto >= 90) {
-      lineas.push({ m: 90, o: 3, h: "<div class=\"evento final\">90' ¡Final del partido! " + esc(p.local) + " " + p.golesL + " - " + p.golesV + " " + esc(p.visitante) + "</div>" });
-      if (item.ganadorLlave) lineas.push({ m: 90, o: 4, h: "<div class=\"evento final\">Pasa de ronda: " + esc(item.ganadorLlave) + "</div>" });
-    }
-    lineas.sort(function (a, b) { return a.m - b.m || a.o - b.o; });
-    relato.innerHTML = lineas.reverse().map(function (x) { return x.h; }).join("");
+    relato.innerHTML = contenidoFicha(L.pestana, recorte(relatoDe(p), L.minuto), extrasLlave(item, L.minuto));
     var terminado = L.minuto >= 90;
     var sig = $("vivo-siguiente");
     if (sig) sig.hidden = !terminado || L.indice >= lista.length - 1;
@@ -693,6 +819,9 @@
     $("armar-azar").addEventListener("click", armarAlAzar);
     $("vaciar").addEventListener("click", vaciarEquipo);
     el.simular.addEventListener("click", simular);
+    $("ficha-cerrar").addEventListener("click", cerrarFicha);
+    $("ficha-partido").addEventListener("click", function (e) { if (e.target === $("ficha-partido")) cerrarFicha(); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") cerrarFicha(); });
   }
 
   iniciar();

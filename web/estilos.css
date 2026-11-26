@@ -608,3 +608,61 @@ main { padding-bottom: 96px; }
 .solo-movil { display: none; }
 @media (max-width: 899px) { .solo-movil { display: inline-flex; } }
 .acciones-armado .boton { white-space: nowrap; font-size: 0.85rem; padding: 0 8px; display: flex; align-items: center; justify-content: center; gap: 4px; }
+
+/* ---------- Ficha del partido: pestañas, relato, estadísticas y 11 vs 11 ---------- */
+.pestanas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: #0a0b0d; border: 1px solid var(--borde); border-radius: 12px; padding: 4px; margin: 10px 0 8px; }
+.pestana { min-height: 40px; border: 0; border-radius: 9px; background: transparent; color: var(--gris); font: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
+.pestana.activa { background: var(--tarjeta2); color: var(--verde); box-shadow: inset 0 0 0 1px var(--borde); }
+.relato-lista .evento { display: grid; grid-template-columns: 34px 22px 1fr; align-items: start; gap: 4px; padding: 6px 0; line-height: 1.35; }
+.ev-min { color: var(--gris); font-weight: 700; font-variant-numeric: tabular-nums; }
+.ev-ico { text-align: center; }
+.evento.atajada .ev-texto, .evento.palo .ev-texto { color: var(--texto); }
+.evento.afuera .ev-texto, .evento.corner .ev-texto, .evento.offside .ev-texto { color: #c9d0d8; }
+.evento.amarilla .ev-texto { color: var(--amarillo); }
+.tag-equipo { display: inline-block; font-size: 0.68rem; font-weight: 800; font-style: normal; padding: 1px 6px; border-radius: 5px; margin-right: 2px; vertical-align: 1px; max-width: 12em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stats { display: flex; flex-direction: column; gap: 10px; padding: 4px 2px; }
+.stats-cabecera { display: flex; justify-content: space-between; }
+.stat-nums { display: grid; grid-template-columns: 3em 1fr 3em; align-items: center; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat-nums span:last-child { text-align: right; }
+.stat-nums .gana { color: var(--verde); }
+.stat-nombre { text-align: center; color: var(--gris); font-size: 0.82rem; font-weight: 600; }
+.stat-barra { display: flex; gap: 3px; height: 6px; margin-top: 4px; }
+.stat-barra span { display: block; height: 100%; background: #3a4049; border-radius: 3px; min-width: 2px; }
+.stat-barra span.gana { background: var(--verde); }
+.figura-partido { background: var(--tarjeta2); border: 1px solid var(--borde); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px; font-size: 0.88rem; }
+.gris { color: var(--gris); }
+.once-vs { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.once-col { background: var(--tarjeta2); border: 1px solid var(--borde); border-radius: 10px; padding: 8px; }
+.once-cabecera { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.once-total { font-weight: 800; color: var(--verde); font-variant-numeric: tabular-nums; }
+.once-fila { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto 28px; align-items: center; gap: 6px; padding: 4px 0; border-bottom: 1px dotted var(--borde); font-size: 0.85rem; }
+.once-fila:last-child { border-bottom: 0; }
+.once-pos { color: var(--gris); font-size: 0.7rem; font-weight: 800; }
+.once-nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.once-ic { font-size: 0.78rem; white-space: nowrap; }
+.once-pts { text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
+.once-fila.figura .once-nombre { color: var(--verde); font-weight: 700; }
+.once-fila.expulsado .once-nombre { color: var(--rojo); text-decoration: line-through; }
+.nuestros-partidos { display: flex; flex-direction: column; gap: 6px; max-height: 420px; overflow-y: auto; }
+.fila-partido { display: grid; grid-template-columns: 28px 1fr auto; grid-template-areas: "res titulo ir" "res marcador ir"; align-items: center; column-gap: 10px; text-align: left; background: var(--tarjeta2); border: 1px solid var(--borde); border-radius: 10px; padding: 8px 10px; color: var(--texto); font: inherit; cursor: pointer; }
+.fila-partido:hover { border-color: var(--verde); }
+.res-letra { grid-area: res; width: 26px; height: 26px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.8rem; color: #0e0f12; }
+.res-letra.gana { background: var(--verde); }
+.res-letra.empata { background: #9aa3ae; }
+.res-letra.pierde { background: var(--rojo); color: #fff; }
+.fila-partido-titulo { grid-area: titulo; color: var(--gris); font-size: 0.75rem; }
+.fila-partido-marcador { grid-area: marcador; font-size: 0.88rem; overflow-wrap: anywhere; }
+.fila-partido-ir { grid-area: ir; color: var(--gris); font-size: 1.3rem; }
+.ficha-cuerpo { max-height: 55vh; overflow-y: auto; }
+/* App: la ficha ocupa toda la pantalla de abajo hacia arriba */
+@media (max-width: 899px) {
+  #ficha-partido { align-items: flex-end; padding: 0; }
+  #ficha-partido .ficha-caja { max-width: none; border-radius: 18px 18px 0 0; max-height: 92vh; }
+  #ficha-partido .ficha-cuerpo { max-height: none; }
+}
+/* Escritorio: ficha ancha y los dos onces lado a lado */
+@media (min-width: 900px) {
+  .ficha-caja { max-width: 760px; }
+  .once-vs { grid-template-columns: 1fr 1fr; }
+  .vivo-relato { max-height: 460px; }
+}

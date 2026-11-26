@@ -116,6 +116,17 @@
     </div>
   </div>
 
+  <div class="modal" id="ficha-partido" hidden>
+    <div class="modal-caja ficha-caja">
+      <div class="modal-cabecera">
+        <span></span>
+        <strong id="ficha-titulo">Partido</strong>
+        <button type="button" class="boton enlace" id="ficha-cerrar" aria-label="Cerrar">✕</button>
+      </div>
+      <div id="ficha-contenido"></div>
+    </div>
+  </div>
+
   <div class="barra-inferior">
     <button type="button" id="abrir-mercado" class="boton secundario solo-movil">Mercado</button>
     <span class="barra-progreso" id="progreso-barra">Titulares 0/11</span>
@@ -124,6 +135,7 @@
 
   <script src="data/jugadores.js"></script>
   <script src="motor.js"></script>
+  <script src="relato.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
