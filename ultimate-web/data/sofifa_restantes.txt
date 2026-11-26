@@ -1,0 +1,23 @@
+Santino Gianini|Argentinos Juniors|CB|56|73|€120K|55.35
+Rodrigo Bacidalupe|Boca Juniors|CAM|63|77|€500K|61.52
+Facundo Roldán|Central Córdoba|LB|53|61|€90K|51.44
+Ignacio Santillan|Central Córdoba|LW|58|70|€230K|57.45
+Nicolás Garrido|Central Córdoba|CB|56|65|€140K|55.97
+Kevin Ibañez|Central Córdoba|ST|53|70|€90K|46.92
+Tiziano Ramirez|Central Córdoba|CM|57|74|€150K|53.56
+Ramiro Gagliardi|Defensa y Justicia|CDM|58|73|€220K|53.42
+Jonás Cabrera|Defensa y Justicia|CM|56|75|€140K|55.89
+Bautista Pieroni|Estudiantes (RC)|LB|57|69|€150K|54.92
+Francisco Gualtieri|Estudiantes (RC)|GK|59|70|€190K|60.19
+Lautaro Herrera|Estudiantes (RC)|GK|62|74|€325K|63.54
+Tomás Escobar|Estudiantes (RC)|CDM|57|67|€180K|54.97
+Leonel Troncoso|Gimnasia|CDM|59|69|€240K|54.17
+Gonzalo Errecalde|Gimnasia|CB|56|61|€140K|55.93
+Mariano Ojeda|Gimnasia|CB|59|71|€210K|58.87
+Martín Úbeda|Gimnasia (Mendoza)|CM|60|67|€250K|54.28
+Uriel Ojeda|San Lorenzo|CM|61|76|€350K|61.23
+Santiago Espindola|River Plate|CDM|59|78|€230K|59.21
+Adrián Fernández|Racing Club|RW|68|71|€1,3M|66.76
+Guillermo Fernández|Rosario Central|CAM|72|76|€1,1M|71.66
+Luciano Minniti|Tigre|CB|57|66|€160K|57.05
+Ignacio Isla|Unión|CB|62|73|€375K|62.39

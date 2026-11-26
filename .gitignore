@@ -1,0 +1,10 @@
+# Archivos que no se publican
+*.xapk
+*.apk
+estadistitcas/
+ultimate-web/data/afa/
+.claude/settings.local.json
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
