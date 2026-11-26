@@ -1,8 +1,8 @@
 /*
- * Motor de simulacion de Ultimate 11 Argentina.
- * Sin dependencias: funciona en el navegador (window.MotorUltimate) y en Node (module.exports).
+ * Motor de simulacion de 11 Ideal Argentina.
+ * Sin dependencias: funciona en el navegador (window.MotorOnceIdeal) y en Node (module.exports).
  *
- * Reglas (ver analisis_ultimate11_y_roadmap.md):
+ * Reglas (ver analisis_y_roadmap.md):
  *  - Puntaje de jugador = PrT (promedio por partido) de la planilla.
  *  - Puntaje de equipo = suma de los 11 titulares.
  *  - Partido: se compara el puntaje efectivo de cada equipo (con azar y localia).
@@ -489,5 +489,5 @@
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = API;
-  else raiz.MotorUltimate = API;
+  else raiz.MotorOnceIdeal = API;
 })(typeof window !== "undefined" ? window : globalThis);

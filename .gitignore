@@ -2,7 +2,7 @@
 *.xapk
 *.apk
 estadistitcas/
-ultimate-web/data/afa/
+web/data/afa/
 .claude/settings.local.json
 __pycache__/
 *.pyc

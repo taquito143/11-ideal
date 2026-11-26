@@ -328,7 +328,7 @@ tr.no-clasifica td.pos { border-left: 3px solid transparent; }
 .fila-nombre { font-weight: 600; overflow-wrap: anywhere; }
 .fila-grl { color: var(--verde); font-weight: 800; }
 
-/* Escenario 2.5D: la cancha se inclina en perspectiva como en Ultimate 11 */
+/* Escenario 2.5D: la cancha se inclina en perspectiva (vista 2.5D) */
 .escenario { perspective: 900px; padding: 4px 0 10px; }
 .cancha {
   transform: rotateX(16deg);

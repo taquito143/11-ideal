@@ -3,7 +3,7 @@
 Fuentes:
   - data/afa/playersStatsFull.json y data/afa/teamsStats.json (AFA, plantel y estadisticas)
   - ../estadistitcas/2026 TORNEO CLAUSURA 2026 - A LA FECHA 16.xlsx (PrT = promedio por partido)
-Uso:  python ultimate-web/tools/extraer_afa.py   (desde la carpeta "11 ideal")
+Uso:  python web/tools/extraer_afa.py   (desde la carpeta "11 ideal")
 """
 import json
 import re
@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import extraer_planillas as base  # noqa: E402
 
 RAIZ = Path(__file__).resolve().parents[2]
-WEB = RAIZ / "ultimate-web"
+WEB = RAIZ / "web"
 AFA = WEB / "data" / "afa"
 EXCEL = RAIZ / "estadistitcas" / "2026 TORNEO CLAUSURA 2026 - A LA FECHA 16.xlsx"
 POSICION = {1: "ARQ", 2: "DEF", 3: "VOL", 4: "DEL"}

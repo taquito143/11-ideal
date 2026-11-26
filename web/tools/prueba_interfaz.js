@@ -41,7 +41,7 @@ global.document = {
   querySelectorAll() { return []; },
 };
 global.window = global;
-global.MotorUltimate = require(path.join(raiz, 'motor.js'));
+global.MotorOnceIdeal = require(path.join(raiz, 'motor.js'));
 global.setInterval = (fn, ms) => { for (let i = 0; i < 40; i++) fn(); return 0; }; // gira de inmediato
 global.clearInterval = () => {};
 eval(fs.readFileSync(path.join(raiz, 'data/jugadores.js'), 'utf8'));

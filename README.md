@@ -13,16 +13,16 @@ Armá tu 11 ideal del fútbol argentino con un presupuesto y simulá el Torneo C
 
 ## Estructura
 
-- `ultimate-web/` — la web (HTML, CSS y JS sin dependencias). Es lo que se publica en GitHub Pages.
-- `ultimate-web/motor.js` — motor de simulación.
-- `ultimate-web/data/` — datos procesados de jugadores y partidos.
-- `ultimate-web/tools/` — scripts para generar los datos.
-- `analisis_ultimate11_y_roadmap.md` — análisis inicial y roadmap.
+- `web/` — la web (HTML, CSS y JS sin dependencias). Es lo que se publica en GitHub Pages.
+- `web/motor.js` — motor de simulación.
+- `web/data/` — datos procesados de jugadores y partidos.
+- `web/tools/` — scripts para generar los datos.
+- `analisis_y_roadmap.md` — análisis inicial y roadmap.
 
 ## Probar en local
 
 ```
-python -m http.server 8765 --directory ultimate-web
+python -m http.server 8765 --directory web
 ```
 
 y abrir http://localhost:8765.

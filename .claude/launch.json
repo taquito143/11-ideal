@@ -4,7 +4,7 @@
     {
       "name": "web-11-ideal",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8765", "--directory", "ultimate-web"],
+      "runtimeArgs": ["-m", "http.server", "8765", "--directory", "web"],
       "port": 8765
     }
   ]

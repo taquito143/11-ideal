@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  var M = window.MotorUltimate;
+  var M = window.MotorOnceIdeal;
   var JUG = window.JUGADORES || [];
   var TORNEO = M.torneosDisponibles(JUG)[0];
   var POOL = M.jugadoresDeTorneo(JUG, TORNEO);

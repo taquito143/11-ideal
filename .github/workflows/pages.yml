@@ -1,4 +1,4 @@
-# Publica la carpeta ultimate-web en GitHub Pages en cada push a main.
+# Publica la carpeta web en GitHub Pages en cada push a main.
 name: Publicar en GitHub Pages
 
 on:
@@ -26,6 +26,6 @@ jobs:
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: ultimate-web
+          path: web
       - id: deploy
         uses: actions/deploy-pages@v4

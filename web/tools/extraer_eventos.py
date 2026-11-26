@@ -1,7 +1,7 @@
 """Agrega a jugadores.json los eventos de cada jugador: goles (GT), amarillas (TA) y rojas (TR).
 
 Uso (desde la carpeta del proyecto):
-    python ultimate-web/tools/extraer_eventos.py
+    python web/tools/extraer_eventos.py
 Reutiliza los lectores de extraer_planillas.py.
 """
 import json
@@ -14,7 +14,7 @@ import extraer_planillas as base  # noqa: E402
 
 RAIZ = Path(__file__).resolve().parents[2]
 ORIGEN = RAIZ / "estadistitcas"
-DESTINO = RAIZ / "ultimate-web" / "data" / "jugadores.json"
+DESTINO = RAIZ / "web" / "data" / "jugadores.json"
 
 
 def eventos_de_libro(ruta):

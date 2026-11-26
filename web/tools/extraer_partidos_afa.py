@@ -3,7 +3,7 @@
 Guarda data/clausura2026_partidos.json: por partido, fecha, equipos, marcador,
 goles (minuto y jugador), amarillas, rojas y cambios.
 
-Uso:  python ultimate-web/tools/extraer_partidos_afa.py   (desde "11 ideal")
+Uso:  python web/tools/extraer_partidos_afa.py   (desde "11 ideal")
 """
 import json
 import re
@@ -13,7 +13,7 @@ from pathlib import Path
 
 BASE = "https://info.afa.org.ar/deposito/html/v3/htmlCenter/data/deportes/futbol/primeraa/"
 RAIZ = Path(__file__).resolve().parents[2]
-SALIDA = RAIZ / "ultimate-web" / "data" / "clausura2026_partidos.json"
+SALIDA = RAIZ / "web" / "data" / "clausura2026_partidos.json"
 CABECERA = {"User-Agent": "Mozilla/5.0"}
 
 

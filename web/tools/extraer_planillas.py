@@ -1,10 +1,10 @@
 """Convierte las planillas Excel de estadisticas a un JSON unificado para la web.
 
 Uso (desde la carpeta del proyecto):
-    python ultimate-web/tools/extraer_planillas.py
+    python web/tools/extraer_planillas.py
 
 Lee todos los .xlsx de la carpeta "estadistitcas" y, de las hojas ARQ, DEF, VOL y DEL,
-genera ultimate-web/data/jugadores.json con: torneo, jugador, pos, equipo,
+genera web/data/jugadores.json con: torneo, jugador, pos, equipo,
 cotizacion, partidos (CT), puntaje acumulado (AcT) y promedio (PrT).
 """
 import json
@@ -20,7 +20,7 @@ HOJAS = ["ARQ"]  # la hoja ARQ trae la lista completa de jugadores con su column
 
 RAIZ = Path(__file__).resolve().parents[2]
 ORIGEN = RAIZ / "estadistitcas"
-DESTINO = RAIZ / "ultimate-web" / "data" / "jugadores.json"
+DESTINO = RAIZ / "web" / "data" / "jugadores.json"
 
 
 def leer_shared(z):

@@ -1,6 +1,6 @@
-# Ultimate 11 (futbol argentino) — análisis y roadmap
+# 11 Ideal Argentina — análisis y roadmap
 
-## 1. Qué es Ultimate 11 (según el paquete instalado)
+## 1. App de referencia: Ultimate 11 (según el paquete instalado)
 
 Archivo analizado: `Ultimate+11_1.10.10_APKPure.xapk` (v1.10.10, código 24, paquete `com.vaultystudios.ultimate11`).
 
@@ -79,7 +79,7 @@ Porcentaje = avance estimado sobre el total del proyecto.
 |---|---|---|---|
 | 1 | Análisis del APK (estructura, pantallas, mecánicas) | Parcial (fórmula de simulación no extraída) | 15% |
 | 2 | Responder preguntas (secciones 2 y 4) | Completo: reglas definidas, incluido jugadores repetidos por toda la temporada | 30% |
-| 3 | Modelo de datos: convertir los 9 Excel a JSON unificado (jugadores, equipos, temporadas) | Hecho: 1.160 registros en `ultimate-web/data/` | 35% |
+| 3 | Modelo de datos: convertir los 9 Excel a JSON unificado (jugadores, equipos, temporadas) | Hecho: 1.160 registros en `web/data/` | 35% |
 | 4 | Definir puntaje de jugador (A1 o A2) y de equipo (suma), con fórmula documentada | Pendiente | 45% |
 | 5 | Motor de partido: comparación de puntajes, banda de empate, resultado | Pendiente | 55% |
 | 6 | Motor de torneo: ida y vuelta, tabla, 16 mejores, 16avos a semifinal ida y vuelta, final única | Pendiente | 65% |
