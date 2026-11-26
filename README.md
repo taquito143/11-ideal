@@ -2,7 +2,7 @@
 
 Armá tu 11 ideal del fútbol argentino con un presupuesto y simulá el Torneo Clausura 2026 como si tu equipo fuera uno más de la liga.
 
-**Jugar:** https://taquito143.github.io/11-ideal/ (redirige a `web/`)
+**Jugar:** https://taquito143.github.io/11-ideal/
 
 ## Cómo funciona
 
