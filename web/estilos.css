@@ -621,8 +621,8 @@ main { padding-bottom: 96px; }
 .acciones-armado .boton { white-space: nowrap; font-size: 0.85rem; padding: 0 8px; display: flex; align-items: center; justify-content: center; gap: 4px; }
 
 /* ---------- Ficha del partido: pestañas, relato, estadísticas y 11 vs 11 ---------- */
-.pestanas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: #0a0b0d; border: 1px solid var(--borde); border-radius: 12px; padding: 4px; margin: 10px 0 8px; }
-.pestana { min-height: 40px; border: 0; border-radius: 9px; background: transparent; color: var(--gris); font: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
+.pestanas { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; background: #0a0b0d; border: 1px solid var(--borde); border-radius: 12px; padding: 4px; margin: 10px 0 8px; }
+.pestana { min-height: 40px; border: 0; border-radius: 9px; background: transparent; color: var(--gris); font: inherit; font-size: 0.85rem; padding: 0 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; cursor: pointer; }
 .pestana.activa { background: var(--tarjeta2); color: var(--verde); box-shadow: inset 0 0 0 1px var(--borde); }
 .relato-lista .evento { display: grid; grid-template-columns: 34px 22px 1fr; align-items: start; gap: 4px; padding: 6px 0; line-height: 1.35; }
 .ev-min { color: var(--gris); font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -654,6 +654,14 @@ main { padding-bottom: 96px; }
 .once-pts { text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
 .once-fila.figura .once-nombre { color: var(--verde); font-weight: 700; }
 .once-fila.expulsado .once-nombre { color: var(--rojo); text-decoration: line-through; }
+.pts-fila { display: grid; grid-template-columns: 34px minmax(0, 1fr) 34px; align-items: center; gap: 2px 6px; padding: 5px 0; border-bottom: 1px dotted var(--borde); font-size: 0.85rem; }
+.pts-fila:last-child { border-bottom: 0; }
+.pts-fila.figura .once-nombre { color: var(--verde); font-weight: 700; }
+.pts-total { text-align: right; font-weight: 800; color: var(--verde); font-variant-numeric: tabular-nums; }
+.pts-total.neg { color: var(--rojo); }
+.pts-detalle { grid-column: 2 / 4; display: flex; flex-wrap: wrap; gap: 3px; }
+.pts-chip { font-size: 0.7rem; background: #22262c; color: var(--gris); border-radius: 6px; padding: 1px 6px; white-space: nowrap; }
+.pts-chip.neg { color: var(--rojo); }
 .once-baja { font-size: 0.78rem; color: var(--gris); padding: 4px 0 0; overflow-wrap: anywhere; }
 .evento.baja, .evento.planteo, .evento.rotacion, .evento.racha { color: var(--gris); }
 .bateria { display: inline-block; vertical-align: middle; width: 22px; height: 8px; margin-left: 6px; border: 1px solid var(--gris); border-radius: 2px; position: relative; }
@@ -684,3 +692,4 @@ main { padding-bottom: 96px; }
   .once-vs { grid-template-columns: 1fr 1fr; }
   .vivo-relato { max-height: 460px; }
 }
+@media (max-width: 420px) { .pestana { font-size: 0.74rem; } }

@@ -349,20 +349,65 @@
     return porJugador;
   }
 
-  // Figura del partido: el de mayor participacion en goles (sin inventar notas).
-  function figura(relato) {
-    var part = participacion(relato), mejor = null, mejorValor = 0;
-    Object.keys(part).forEach(function (k) {
-      var x = part[k];
-      var valor = x.goles * 3 + x.asistencias * 2 + x.atajadas * 0.6 + x.remates * 0.1 - x.rojas * 3;
-      if (valor > mejorValor) { mejorValor = valor; mejor = { clave: k, datos: x }; }
+  // Puntos tipo fantasy: tabla fija aplicada a lo que paso en el partido.
+  // No hay notas inventadas: solo se cuentan goles, asistencias, vallas, atajadas y tarjetas.
+  var PUNTOS = {
+    jugo: 1, jugo60: 2,
+    gol: { ARQ: 6, DEF: 6, VOL: 5, DEL: 4 },
+    asistencia: 3,
+    vallaInvicta: { ARQ: 4, DEF: 4, VOL: 1, DEL: 0 },
+    cadaDosRecibidos: { ARQ: -1, DEF: -1, VOL: 0, DEL: 0 },
+    cadaTresAtajadas: 1,
+    amarilla: -1, roja: -3
+  };
+
+  function puntos(relato, alineaciones) {
+    var hasta = relato.lineas.reduce(function (m, l) { return Math.max(m, l.minuto); }, 0);
+    var res = {};
+    [relato.local, relato.visitante].forEach(function (nombre) {
+      var eq = alineaciones && alineaciones[nombre];
+      if (!eq) return;
+      var rival = nombre === relato.local ? relato.visitante : relato.local;
+      var recibidos = [], roja = {}, part = {};
+      relato.lineas.forEach(function (l) {
+        if (l.tipo === "gol" && l.equipo === rival) recibidos.push(l.minuto);
+        if (l.tipo === "roja" && l.equipo === nombre) roja[l.jugador] = l.minuto;
+      });
+      var p = participacion(relato);
+      eq.once.forEach(function (j) {
+        var x = p[nombre + "|" + j.jugador] || {};
+        var salida = roja[j.jugador] != null ? roja[j.jugador] : hasta;
+        var detalle = [];
+        function suma(concepto, pts) { if (pts) detalle.push([concepto, pts]); }
+        suma(salida >= 60 ? "Jugó 60' o más" : "Jugó", salida >= 60 ? PUNTOS.jugo60 : PUNTOS.jugo);
+        if (x.goles) suma(x.goles > 1 ? x.goles + " goles" : "Gol", x.goles * PUNTOS.gol[j.pos]);
+        if (x.asistencias) suma(x.asistencias > 1 ? x.asistencias + " asistencias" : "Asistencia", x.asistencias * PUNTOS.asistencia);
+        var enCancha = recibidos.filter(function (m) { return m <= salida; }).length;
+        if (!recibidos.length && salida >= 60) suma("Valla invicta", PUNTOS.vallaInvicta[j.pos]);
+        if (enCancha >= 2) suma(enCancha + " goles recibidos", Math.floor(enCancha / 2) * PUNTOS.cadaDosRecibidos[j.pos]);
+        if (x.atajadas >= 3) suma(x.atajadas + " atajadas", Math.floor(x.atajadas / 3) * PUNTOS.cadaTresAtajadas);
+        if (x.amarillas) suma("Amarilla", x.amarillas * PUNTOS.amarilla);
+        if (x.rojas) suma("Roja", x.rojas * PUNTOS.roja);
+        var total = detalle.reduce(function (a, d) { return a + d[1]; }, 0);
+        res[nombre + "|" + j.jugador] = { equipo: nombre, jugador: j.jugador, pos: j.pos, total: total, detalle: detalle, datos: x };
+      });
     });
-    if (!mejor) return null;
-    var partes = mejor.clave.split("|");
-    return { equipo: partes[0], jugador: partes[1], datos: mejor.datos };
+    return res;
   }
 
-  var API = { generar: generar, estadisticas: estadisticas, participacion: participacion, figura: figura };
+  // Figura del partido: el que mas puntos sumo (desempate: goles, asistencias, atajadas).
+  function figura(relato, alineaciones) {
+    var pts = puntos(relato, alineaciones), mejor = null;
+    Object.keys(pts).forEach(function (k) {
+      var x = pts[k], d = x.datos;
+      var valor = x.total * 1000 + (d.goles || 0) * 100 + (d.asistencias || 0) * 10 + (d.atajadas || 0);
+      if (!mejor || valor > mejor.valor) mejor = { valor: valor, x: x };
+    });
+    if (!mejor) return null;
+    return { equipo: mejor.x.equipo, jugador: mejor.x.jugador, datos: mejor.x.datos, puntos: mejor.x.total };
+  }
+
+  var API = { generar: generar, estadisticas: estadisticas, participacion: participacion, puntos: puntos, figura: figura, PUNTOS: PUNTOS };
   if (typeof module !== "undefined" && module.exports) module.exports = API;
   else raiz.RelatoOnceIdeal = API;
 })(typeof window !== "undefined" ? window : globalThis);

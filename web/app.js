@@ -620,7 +620,7 @@
   // ---------- Relato, estadisticas y formaciones de un partido ----------
   var R = window.RelatoOnceIdeal;
   var ICONO = { gol: "⚽", atajada: "🧤", palo: "🥅", afuera: "↗", corner: "⛳", offside: "🚩", baja: "🚫", rotacion: "🔄", racha: "📈", planteo: "📋", amarilla: "🟨", roja: "🟥", inicio: "▶", pausa: "⏸", final: "🏁" };
-  var PESTANAS = [["relato", "Relato"], ["estadisticas", "Estadísticas"], ["formaciones", "Formaciones"]];
+  var PESTANAS = [["relato", "Relato"], ["estadisticas", "Estadísticas"], ["formaciones", "Formaciones"], ["puntos", "Puntos"]];
   var FILAS_STATS = [
     ["remates", "Remates"], ["alArco", "Remates al arco"], ["atajadas", "Atajadas"], ["corners", "Córners"],
     ["faltas", "Faltas"], ["offsides", "Offsides"], ["amarillas", "Amarillas"], ["rojas", "Rojas"]
@@ -683,7 +683,7 @@
 
   // 11 vs 11: los dos onces con su puntaje FIFA y lo que hizo cada uno en el partido.
   function formacionesHTML(rel) {
-    var part = R.participacion(rel), fig = R.figura(rel);
+    var part = R.participacion(rel), fig = R.figura(rel, rel.alineaciones);
     function columna(nombre) {
       var eq = (rel.alineaciones && rel.alineaciones[nombre]) || estado.res.equipos[nombre];
       var html = "<div class=\"once-col\"><div class=\"once-cabecera\">" + etiquetaEquipo(nombre) +
@@ -719,14 +719,44 @@
       if (d.goles) logros.push(d.goles + (d.goles > 1 ? " goles" : " gol"));
       if (d.asistencias) logros.push(d.asistencias + (d.asistencias > 1 ? " asistencias" : " asistencia"));
       if (d.atajadas) logros.push(d.atajadas + (d.atajadas > 1 ? " atajadas" : " atajada"));
+      logros.push(fig.puntos + " pts");
       html += "<div class=\"figura-partido\">⭐ Figura del partido: <strong>" + esc(fig.jugador) + "</strong> " + etiquetaEquipo(fig.equipo) +
-        (logros.length ? " <span class=\"gris\">(" + logros.join(", ") + ")</span>" : "") + "</div>";
+        " <span class=\"gris\">(" + logros.join(", ") + ")</span></div>";
     }
     return html + "<div class=\"once-vs\">" + columna(rel.local) + columna(rel.visitante) + "</div>" +
       "<p class=\"ayuda\">El número es el puntaje FIFA de cada jugador. La barra es su energía: con mucho cansancio rinde hasta un 10% menos. ⚽ gol · 👟 asistencia · 🧤 atajadas.</p>";
   }
 
+  // Puntos tipo fantasy de cada jugador, con el detalle de donde salen.
+  function puntosHTML(rel) {
+    var pts = R.puntos(rel, rel.alineaciones), fig = R.figura(rel, rel.alineaciones);
+    function columna(nombre) {
+      var lista = Object.keys(pts).map(function (k) { return pts[k]; }).filter(function (x) { return x.equipo === nombre; });
+      lista.sort(function (a, b) { return b.total - a.total; });
+      var total = lista.reduce(function (a, x) { return a + x.total; }, 0);
+      var html = "<div class=\"once-col\"><div class=\"once-cabecera\">" + etiquetaEquipo(nombre) +
+        "<span class=\"once-total\" title=\"Puntos del equipo\">" + total + " pts</span></div>";
+      lista.forEach(function (x) {
+        var esFig = fig && fig.equipo === nombre && fig.jugador === x.jugador;
+        html += "<div class=\"pts-fila" + (esFig ? " figura" : "") + "\"><span class=\"once-pos\">" + x.pos + "</span>" +
+          "<span class=\"once-nombre\">" + esc(x.jugador) + (esFig ? " ⭐" : "") + "</span>" +
+          "<span class=\"pts-total" + (x.total < 0 ? " neg" : "") + "\">" + x.total + "</span>" +
+          "<span class=\"pts-detalle\">" + x.detalle.map(function (d) {
+            return "<span class=\"pts-chip" + (d[1] < 0 ? " neg" : "") + "\">" + esc(d[0]) + " " + (d[1] > 0 ? "+" : "") + d[1] + "</span>";
+          }).join("") + "</span></div>";
+      });
+      return html + "</div>";
+    }
+    var T = R.PUNTOS;
+    return "<div class=\"once-vs\">" + columna(rel.local) + columna(rel.visitante) + "</div>" +
+      "<p class=\"ayuda\">Tabla fija, sin notas inventadas: jugó " + T.jugo + " (60' o más: " + T.jugo60 + ") · gol: arquero o defensor " + T.gol.DEF +
+      ", volante " + T.gol.VOL + ", delantero " + T.gol.DEL + " · asistencia " + T.asistencia + " · valla invicta: arquero o defensor " + T.vallaInvicta.DEF +
+      ", volante " + T.vallaInvicta.VOL + " · cada 2 goles recibidos: arquero o defensor " + T.cadaDosRecibidos.DEF + " · cada 3 atajadas +" + T.cadaTresAtajadas +
+      " · amarilla " + T.amarilla + " · roja " + T.roja + ".</p>";
+  }
+
   function contenidoFicha(pestana, rel, extras) {
+    if (pestana === "puntos") return puntosHTML(rel);
     if (pestana === "estadisticas") return estadisticasHTML(rel);
     if (pestana === "formaciones") return formacionesHTML(rel);
     return relatoHTML(rel, extras);
