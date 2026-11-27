@@ -502,21 +502,44 @@
     var slots = todosLosCasilleros();
     slots.forEach(function (c) { c.jugador = null; });
     var usados = {}, restante = estado.presupuestoTotal;
-    function costoMinimo(pos) {
-      var min = Infinity;
-      POOL.forEach(function (j) { if (j.pos === pos && !usados[j.jugador] && (j.valor || 0) < min) min = j.valor || 0; });
-      return min === Infinity ? 0 : min;
+    // Lo minimo que cuestan los casilleros que faltan: los N mas baratos libres de cada puesto.
+    function reservaDesde(desde) {
+      var faltan = {}, total = 0;
+      for (var k = desde; k < slots.length; k++) faltan[slots[k].pos] = (faltan[slots[k].pos] || 0) + 1;
+      Object.keys(faltan).forEach(function (pos) {
+        POOL.filter(function (j) { return j.pos === pos && !usados[j.jugador]; })
+          .map(function (j) { return j.valor || 0; }).sort(function (a, b) { return a - b; })
+          .slice(0, faltan[pos]).forEach(function (v) { total += v; });
+      });
+      return total;
     }
     for (var i = 0; i < slots.length; i++) {
-      var c = slots[i], reserva = 0;
-      for (var k = i + 1; k < slots.length; k++) reserva += costoMinimo(slots[k].pos);
+      var c = slots[i], reserva = reservaDesde(i + 1);
       var tope = restante - reserva;
-      var cand = POOL.filter(function (j) { return j.pos === c.pos && !usados[j.jugador] && (j.valor || 0) <= tope; });
+      // Apunta a repartir lo que queda entre los casilleros que faltan, para gastar casi todo.
+      var ideal = (tope + reserva) / (slots.length - i);
+      var cand = POOL.filter(function (j) { return j.pos === c.pos && !usados[j.jugador] && (j.valor || 0) <= tope && (j.valor || 0) >= ideal * 0.6; });
+      if (!cand.length) cand = POOL.filter(function (j) { return j.pos === c.pos && !usados[j.jugador] && (j.valor || 0) <= tope; });
       if (!cand.length) cand = POOL.filter(function (j) { return j.pos === c.pos && !usados[j.jugador]; })
         .sort(function (a, b) { return (a.valor || 0) - (b.valor || 0); }).slice(0, 1);
       if (!cand.length) continue;
       var e = cand[Math.floor(Math.random() * cand.length)];
       c.jugador = e; usados[e.jugador] = true; restante -= e.valor || 0;
+    }
+    // Mejora: con la plata que sobra, cambia jugadores por otros mas caros del mismo puesto.
+    for (var vuelta = 0; vuelta < 3; vuelta++) {
+      slots.slice().sort(function () { return Math.random() - 0.5; }).forEach(function (c) {
+        if (!c.jugador) return;
+        var actual = c.jugador.valor || 0;
+        var mejores = POOL.filter(function (j) {
+          return j.pos === c.pos && !usados[j.jugador] && (j.valor || 0) > actual && (j.valor || 0) - actual <= restante;
+        });
+        if (!mejores.length) return;
+        mejores.sort(function (a, b) { return (b.valor || 0) - (a.valor || 0); });
+        var e = mejores[Math.floor(Math.random() * Math.min(5, mejores.length))];
+        delete usados[c.jugador.jugador]; usados[e.jugador] = true;
+        restante -= (e.valor || 0) - actual; c.jugador = e;
+      });
     }
     estado.casilleroMercado = null; estado.seleccion = null;
     render(); pintarFicha();

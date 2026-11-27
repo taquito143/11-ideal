@@ -99,7 +99,7 @@ Además, el ejemplo práctico de la respuesta usa pesos por **categoría** (Tiro
 | 7 | Puntos tipo fantasy en la ficha (tabla fija sobre los eventos, sin notas inventadas) | Hecho |
 | 8 | Revisar reglamento Gran DT y simulador Copero para ideas | Pendiente |
 | 9 | Selector de temporada con los otros Excel (requiere ratings FIFA de cada año) | Pendiente |
-| 10 | Pendientes chicos: que "Al azar" use más presupuesto, borrar `tools/prueba_interfaz.js` (obsoleto), decidir Gabriel Ávalos (agente libre en FC27) | Pendiente |
+| 10 | Pendientes chicos: "Al azar" usa casi todo el presupuesto (hecho), borrar `tools/prueba_interfaz.js` (hecho), decidir Gabriel Ávalos (agente libre en FC27, sin valor FIFA) | Falta Ávalos |
 
 ### v3 — App para celular (APK) · 0%
 
