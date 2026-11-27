@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0a0b0d">
   <title>11 Ideal Argentina</title>
-  <link rel="stylesheet" href="estilos.css">
+  <link rel="stylesheet" href="estilos.css?v=5">
 </head>
 <body>
   <header class="encabezado">
@@ -27,6 +27,19 @@
           </label>
         </div>
         <p class="ayuda">Tocá una posición o elegí jugadores en el mercado. No podés pasarte del presupuesto.</p>
+        <div class="tacticas">
+          <label class="formacion">Mentalidad
+            <select id="mentalidad">
+              <option value="defensiva">Defensiva</option>
+              <option value="equilibrada" selected>Equilibrada</option>
+              <option value="ofensiva">Ofensiva</option>
+            </select>
+          </label>
+          <label class="formacion">Capitán
+            <select id="capitan"></select>
+          </label>
+        </div>
+        <p class="ayuda tacticas-ayuda" id="tacticas-ayuda"></p>
         <div class="acciones-armado">
           <button type="button" id="abrir-recomendador" class="boton secundario">✨ Recomendador</button>
           <button type="button" id="armar-azar" class="boton secundario">🎲 Al azar</button>
@@ -133,9 +146,9 @@
     <button type="button" id="simular" class="boton principal" disabled>Simular temporada</button>
   </div>
 
-  <script src="data/jugadores.js"></script>
-  <script src="motor.js"></script>
-  <script src="relato.js"></script>
-  <script src="app.js"></script>
+  <script src="data/jugadores.js?v=5"></script>
+  <script src="motor.js?v=5"></script>
+  <script src="relato.js?v=5"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>

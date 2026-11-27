@@ -210,6 +210,14 @@
       });
     });
 
+    // Planteo de cada equipo (si no es el equilibrado).
+    var PLANTEO = { defensiva: "Sale a cerrarse atrás con un planteo defensivo", ofensiva: "Sale a buscar el partido con un planteo ofensivo" };
+    lados.forEach(function (lado) {
+      if (PLANTEO[lado.eq.mentalidad]) {
+        lineas.push({ minuto: 0, orden: 0.5, tipo: "planteo", equipo: lado.nombre, texto: PLANTEO[lado.eq.mentalidad] + "." });
+      }
+    });
+
     // Eventos del motor: goles y tarjetas.
     var amarillas = {};
     (p.eventos || []).forEach(function (e) {
@@ -237,6 +245,8 @@
     // Color del partido segun la diferencia de puntaje de los equipos.
     var cuotaL = local.puntaje * 1.03 / (local.puntaje * 1.03 + visitante.puntaje);
     var posesionL = Math.round(50 + (cuotaL - 0.5) * 180 + (rng() * 2 - 1) * 5);
+    var CORRE = { defensiva: -4, ofensiva: 4 };
+    posesionL += (CORRE[local.mentalidad] || 0) - (CORRE[visitante.mentalidad] || 0);
     posesionL = Math.max(32, Math.min(68, posesionL));
 
     lados.forEach(function (lado) {

@@ -86,7 +86,7 @@ Además, el ejemplo práctico de la respuesta usa pesos por **categoría** (Tiro
 | Simulación rápida y lenta (tiempo real, 2x, 4x, partido a partido) | Hecho |
 | Publicación en GitHub Pages | Hecho |
 
-### v2 — Partidos más ricos · 45%
+### v2 — Partidos más ricos · 55%
 
 | # | Tarea | Estado |
 |---|---|---|
@@ -94,7 +94,7 @@ Además, el ejemplo práctico de la respuesta usa pesos por **categoría** (Tiro
 | 2 | Ficha del partido: estadísticas comparadas | Hecho |
 | 3 | Formaciones 11 vs 11 con figura del partido | Hecho |
 | 4 | Suplentes en el partido: entra el del banco por suspensión (4 amarillas o roja = 1 fecha) | Hecho |
-| 5 | Mentalidad (defensiva / equilibrada / ofensiva) y capitán | Pendiente |
+| 5 | Mentalidad (defensiva / equilibrada / ofensiva) y capitán | Hecho |
 | 6 | Fatiga y rachas | Pendiente |
 | 7 | Puntos tipo fantasy en la ficha (tabla fija sobre los eventos, sin notas inventadas) | Pendiente |
 | 8 | Revisar reglamento Gran DT y simulador Copero para ideas | Pendiente |

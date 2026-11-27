@@ -47,6 +47,8 @@
 
   var estado = {
     formacion: "4-3-3",
+    mentalidad: "equilibrada",
+    capitan: null,
     titulares: [],
     suplentes: [],
     presupuestoTotal: 0,
@@ -63,7 +65,7 @@
   var el = {
     disponible: $("presupuesto-disponible"), total: $("presupuesto-total"),
     cancha: $("cancha"), banco: $("banco"), progreso: $("progreso"), progresoBarra: $("progreso-barra"),
-    formacion: $("formacion"), mercado: $("mercado"), mercadoPres: $("mercado-presupuesto"), mercadoJug: $("mercado-jugadores"),
+    formacion: $("formacion"), mentalidad: $("mentalidad"), capitan: $("capitan"), tacticasAyuda: $("tacticas-ayuda"), mercado: $("mercado"), mercadoPres: $("mercado-presupuesto"), mercadoJug: $("mercado-jugadores"),
     vistaLista: $("mercado-vista-lista"), vistaFiltros: $("mercado-vista-filtros"),
     mercadoTitulo: $("mercado-titulo"), mercadoFicha: $("mercado-ficha"), buscar: $("mercado-buscar"),
     chipsPos: $("chips-pos"), chipsActivos: $("chips-activos"), lista: $("mercado-lista"),
@@ -166,7 +168,9 @@
     b.type = "button";
     b.className = "casillero" + (c.jugador ? " lleno" : "") + (estado.casilleroMercado === c ? " activo" : "");
     if (c.jugador) b.title = c.jugador.jugador;
-    var html = "<span class=\"camiseta-wrap\">" + camisetaHTML(c.jugador ? COLORES[c.jugador.equipo] : null) + "</span>" +
+    var esCapitan = c.jugador && estado.capitan === c.jugador.jugador && estado.titulares.indexOf(c) !== -1;
+    var html = (esCapitan ? "<span class=\"brazalete\" title=\"Capitán\">C</span>" : "") +
+      "<span class=\"camiseta-wrap\">" + camisetaHTML(c.jugador ? COLORES[c.jugador.equipo] : null) + "</span>" +
       "<span class=\"pos\">" + esc(c.pos) + "</span>";
     html += c.jugador
       ? "<span class=\"nombre\">" + esc(nombreCorto(c.jugador.jugador)) + "</span><span class=\"puntos\">" + puntaje(c.jugador) + " · " + euros(c.jugador.valor) + "</span>"
@@ -176,7 +180,31 @@
     return b;
   }
 
+  var AYUDA_MENTALIDAD = {
+    defensiva: "Defensiva: cuesta más perder pero también ganar; menos goles. Conviene contra rivales más fuertes.",
+    equilibrada: "Equilibrada: sin riesgos extra.",
+    ofensiva: "Ofensiva: menos empates, más goles para los dos lados. Conviene cuando sos el favorito."
+  };
+  // Capitan: se elige entre los titulares; si no hay uno elegido (o salio del 11), es el de mayor puntaje.
+  function pintarTacticas() {
+    if (!el.capitan || !el.mentalidad) return;   // pagina vieja en cache
+    var tit = estado.titulares.map(function (c) { return c.jugador; }).filter(Boolean);
+    if (!tit.some(function (j) { return j.jugador === estado.capitan; })) {
+      var mejor = tit.slice().sort(function (a, b) { return b.promedio - a.promedio; })[0];
+      estado.capitan = mejor ? mejor.jugador : null;
+    }
+    el.capitan.innerHTML = tit.length
+      ? tit.map(function (j) {
+          return "<option value=\"" + esc(j.jugador) + "\"" + (j.jugador === estado.capitan ? " selected" : "") + ">" + esc(j.jugador) + " (" + puntaje(j) + ")</option>";
+        }).join("")
+      : "<option value=\"\">Elegí titulares</option>";
+    el.capitan.disabled = !tit.length;
+    el.mentalidad.value = estado.mentalidad;
+    el.tacticasAyuda.textContent = AYUDA_MENTALIDAD[estado.mentalidad] + " El capitán suma un 10% extra de su puntaje mientras juega.";
+  }
+
   function render() {
+    pintarTacticas();
     el.cancha.innerHTML = "";
     ["DEL", "VOL", "DEF", "ARQ"].forEach(function (pos) {
       var linea = document.createElement("div");
@@ -508,7 +536,8 @@
     todosLosCasilleros().forEach(function (c) { if (c.jugador) excluidos[c.jugador.jugador] = true; });
     var clubes = M.construirClubes(JUG, TORNEO, excluidos);
     var banco = estado.suplentes.map(function (c) { return c.jugador; }).filter(Boolean);
-    var nuestro = { nombre: "Nosotros", esNuestro: true, once: titulares, banco: banco, puntaje: M.puntajeOnce(titulares) };
+    var nuestro = { nombre: "Nosotros", esNuestro: true, once: titulares, banco: banco, puntaje: M.puntajeOnce(titulares),
+      mentalidad: estado.mentalidad, capitan: estado.capitan };
     detenerReloj();
     estado.res = M.simularTorneo({ clubes: clubes, nuestro: nuestro, rng: M.crearRng((Date.now() ^ 0x9e3779b9) >>> 0) });
     estado.modo = "rapida";
@@ -590,7 +619,7 @@
 
   // ---------- Relato, estadisticas y formaciones de un partido ----------
   var R = window.RelatoOnceIdeal;
-  var ICONO = { gol: "⚽", atajada: "🧤", palo: "🥅", afuera: "↗", corner: "⛳", offside: "🚩", baja: "🚫", amarilla: "🟨", roja: "🟥", inicio: "▶", pausa: "⏸", final: "🏁" };
+  var ICONO = { gol: "⚽", atajada: "🧤", palo: "🥅", afuera: "↗", corner: "⛳", offside: "🚩", baja: "🚫", planteo: "📋", amarilla: "🟨", roja: "🟥", inicio: "▶", pausa: "⏸", final: "🏁" };
   var PESTANAS = [["relato", "Relato"], ["estadisticas", "Estadísticas"], ["formaciones", "Formaciones"]];
   var FILAS_STATS = [
     ["remates", "Remates"], ["alArco", "Remates al arco"], ["atajadas", "Atajadas"], ["corners", "Córners"],
@@ -809,6 +838,8 @@
     render();
     pintarFicha();
     el.formacion.addEventListener("change", function () { cambiarFormacion(el.formacion.value); });
+    el.mentalidad.addEventListener("change", function () { estado.mentalidad = el.mentalidad.value; pintarTacticas(); });
+    el.capitan.addEventListener("change", function () { estado.capitan = el.capitan.value; render(); });
     el.buscar.addEventListener("input", function () { estado.filtros.texto = el.buscar.value; pintarLista(); });
     el.chipsPos.querySelectorAll("[data-pos]").forEach(function (b) {
       b.addEventListener("click", function () {

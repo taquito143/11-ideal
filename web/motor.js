@@ -31,8 +31,33 @@
     golesPromedio: 1.15,       // goles esperados por equipo con puntaje de referencia (calibrado: real Clausura 2026 = 2,34 por partido)
     multiplicadorAmarillas: 1.35, // calibrado: ~4,7 amarillas por partido (real Clausura 2026 = 4,71)
     multiplicadorRojas: 1.4,      // calibrado: ~0,30 rojas por partido (real Clausura 2026 = 0,30)
-    puntajeReferencia: 724     // puntaje promedio de un club (suma de 11 puntajes por atributos, escala FIFA)
+    puntajeReferencia: 724,    // puntaje promedio de un club (suma de 11 puntajes por atributos, escala FIFA)
+    bonusCapitan: 0.10         // el capitan en cancha suma un 10% extra de su propio puntaje
   };
+
+  // Mentalidad: no cambia la fuerza del equipo, cambia el riesgo.
+  //  ganar / perder: cuanto se achica o agranda la franja de empate del lado de ganar o de perder
+  //    (defensiva: cuesta mas perder y un poco mas ganar; ofensiva: menos empates hacia los dos lados)
+  //  goles: goles esperados del partido (para los dos equipos)
+  //  azar:  cuanto puede variar el rendimiento en el partido
+  var MENTALIDADES = {
+    // Calibrado (tools/prueba_mentalidad.js): al favorito le conviene apenas la ofensiva,
+    // al que es menos le conviene la defensiva, y entre parejos las tres rinden parecido.
+    defensiva: { nombre: "Defensiva", ganar: 2, perder: 3, goles: 0.8, azar: 0.9, fuerza: 1, posesion: -4 },
+    equilibrada: { nombre: "Equilibrada", ganar: 1, perder: 1, goles: 1, azar: 1, fuerza: 1, posesion: 0 },
+    ofensiva: { nombre: "Ofensiva", ganar: 0.4, perder: 0.6, goles: 1.2, azar: 1.05, fuerza: 0.995, posesion: 4 }
+  };
+  function mentalidadDe(equipo) { return MENTALIDADES[equipo.mentalidad] || MENTALIDADES.equilibrada; }
+
+  // Puntaje con el que juega el equipo: suma de los 11 + el plus del capitan si esta en cancha.
+  function capitanEnCancha(equipo) {
+    if (!equipo.capitan) return null;
+    return equipo.once.filter(function (j) { return j.jugador === equipo.capitan; })[0] || null;
+  }
+  function fuerza(equipo) {
+    var c = capitanEnCancha(equipo);
+    return equipo.puntaje + (c ? CONFIG.bonusCapitan * (c.promedio || 0) : 0);
+  }
 
   // ---------- Azar reproducible (mulberry32) ----------
   function crearRng(semilla) {
@@ -115,7 +140,9 @@
         banco = banco.filter(function (j) { return extra.indexOf(j) === -1; });
       }
       if (titulares.length === 11) {
-        clubes.push({ nombre: equipo, esNuestro: false, once: titulares, banco: banco, puntaje: puntajeOnce(titulares) });
+        var capitan = titulares.slice().sort(function (a, b) { return (b.promedio || 0) - (a.promedio || 0); })[0];
+        clubes.push({ nombre: equipo, esNuestro: false, once: titulares, banco: banco, puntaje: puntajeOnce(titulares),
+          capitan: capitan.jugador, mentalidad: "equilibrada" });
       }
     });
     return clubes;
@@ -128,13 +155,17 @@
   // ---------- Partidos ----------
   // Resultado de un partido: "L" gana local, "E" empate, "V" gana visitante.
   function resultadoPartido(local, visitante, rng) {
-    var azarL = 1 + (rng() * 2 - 1) * CONFIG.azarPorPartido;
-    var azarV = 1 + (rng() * 2 - 1) * CONFIG.azarPorPartido;
-    var efectivoL = local.puntaje * (1 + CONFIG.bonusLocalia) * azarL;
-    var efectivoV = visitante.puntaje * azarV;
+    var mL = mentalidadDe(local), mV = mentalidadDe(visitante);
+    var azarL = 1 + (rng() * 2 - 1) * CONFIG.azarPorPartido * mL.azar;
+    var azarV = 1 + (rng() * 2 - 1) * CONFIG.azarPorPartido * mV.azar;
+    var efectivoL = fuerza(local) * (mL.fuerza || 1) * (1 + CONFIG.bonusLocalia) * azarL;
+    var efectivoV = fuerza(visitante) * (mV.fuerza || 1) * azarV;
     var proporcion = efectivoL / (efectivoL + efectivoV) * 100;
-    if (proporcion > CONFIG.empateMax) return "L";
-    if (proporcion < CONFIG.empateMin) return "V";
+    var base = (CONFIG.empateMax - CONFIG.empateMin) / 2;
+    var limiteL = 50 + base * (mL.ganar + mV.perder) / 2;   // por encima gana el local
+    var limiteV = 50 - base * (mV.ganar + mL.perder) / 2;   // por debajo gana el visitante
+    if (proporcion > limiteL) return "L";
+    if (proporcion < limiteV) return "V";
     return "E";
   }
 
@@ -170,8 +201,9 @@
   // asi la vista rapida y la lenta muestran exactamente lo mismo.
   function jugarPartido(local, visitante, rng) {
     var res = resultadoPartido(local, visitante, rng);
-    var lambdaL = CONFIG.golesPromedio * local.puntaje / CONFIG.puntajeReferencia;
-    var lambdaV = CONFIG.golesPromedio * visitante.puntaje / CONFIG.puntajeReferencia;
+    var factorGoles = (mentalidadDe(local).goles + mentalidadDe(visitante).goles) / 2;
+    var lambdaL = CONFIG.golesPromedio * factorGoles * local.puntaje / CONFIG.puntajeReferencia;
+    var lambdaV = CONFIG.golesPromedio * factorGoles * visitante.puntaje / CONFIG.puntajeReferencia;
     // Se sortean goles hasta que el marcador coincida con el resultado (muestreo condicional),
     // asi no se inflan los goles con un ajuste posterior.
     function coincide(a, b) {
@@ -248,7 +280,8 @@
       return entra;
     });
     if (!bajas.length) return equipo;
-    return { nombre: equipo.nombre, esNuestro: equipo.esNuestro, once: once, banco: equipo.banco, puntaje: puntajeOnce(once), bajas: bajas };
+    return { nombre: equipo.nombre, esNuestro: equipo.esNuestro, once: once, banco: equipo.banco, puntaje: puntajeOnce(once), bajas: bajas,
+      capitan: equipo.capitan, mentalidad: equipo.mentalidad };
   }
   function registrarSanciones(sanc, equipo, eventos) {
     if (!sanc) return;
@@ -530,6 +563,9 @@
   // ---------- Exportacion ----------
   var API = {
     CONFIG: CONFIG,
+    MENTALIDADES: MENTALIDADES,
+    fuerza: fuerza,
+    capitanEnCancha: capitanEnCancha,
     FORMACION: FORMACION,
     BANCO: BANCO,
     POSICIONES: POSICIONES,
