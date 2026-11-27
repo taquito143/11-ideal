@@ -202,6 +202,14 @@
     lineas.push({ minuto: 46, orden: 0, tipo: "pausa", texto: FRASES.segundoTiempo[0] });
     lineas.push({ minuto: 90, orden: 3, tipo: "final", texto: rellenar(FRASES.final[0], { local: p.local, visitante: p.visitante, gl: p.golesL, gv: p.golesV }) });
 
+    // Bajas por suspension (las decide el motor antes del partido).
+    lados.forEach(function (lado) {
+      (lado.eq.bajas || []).forEach(function (b) {
+        lineas.push({ minuto: 0, orden: -1, tipo: "baja", equipo: lado.nombre,
+          texto: "Baja por suspensión: " + b.sale + ". En su lugar juega " + b.entra + "." });
+      });
+    });
+
     // Eventos del motor: goles y tarjetas.
     var amarillas = {};
     (p.eventos || []).forEach(function (e) {

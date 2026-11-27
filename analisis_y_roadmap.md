@@ -71,33 +71,40 @@ Además, el ejemplo práctico de la respuesta usa pesos por **categoría** (Tiro
 
 **E. Plataforma.** Recomiendo una web en un único HTML/JS, sin backend, con los datos de los Excel convertidos a JSON.
 
-## 5. Roadmap con porcentajes
+## 5. Roadmap por versiones (actualizado 26/11/2026)
 
-Porcentaje = avance estimado sobre el total del proyecto.
+> Las secciones 2 a 4 son el análisis original. Desde entonces cambiaron dos cosas: se quitó la ruleta (solo modo presupuesto) y el puntaje pasó a ser el de atributos FIFA (el PrT de las planillas queda solo como dato informativo).
 
-| # | Tarea | Estado | % acumulado |
-|---|---|---|---|
-| 1 | Análisis del APK (estructura, pantallas, mecánicas) | Parcial (fórmula de simulación no extraída) | 15% |
-| 2 | Responder preguntas (secciones 2 y 4) | Completo: reglas definidas, incluido jugadores repetidos por toda la temporada | 30% |
-| 3 | Modelo de datos: convertir los 9 Excel a JSON unificado (jugadores, equipos, temporadas) | Hecho: 1.160 registros en `web/data/` | 35% |
-| 4 | Definir puntaje de jugador (A1 o A2) y de equipo (suma), con fórmula documentada | Pendiente | 45% |
-| 5 | Motor de partido: comparación de puntajes, banda de empate, resultado | Pendiente | 55% |
-| 6 | Motor de torneo: ida y vuelta, tabla, 16 mejores, 16avos a semifinal ida y vuelta, final única | Pendiente | 65% |
-| 7 | Ruleta: selección aleatoria de jugador por posición | Pendiente | 75% |
-| 8 | Interfaz: armado del equipo (11 posiciones) y simulación del torneo | Pendiente | 85% |
-| 9 | Pruebas: validar contra temporadas reales (los "FINALES") | Pendiente | 95% |
-| 10 | Entrega (guía de uso, capturas) | Pendiente | 100% |
+### v1 — Juego individual con presupuesto (publicado) · 100%
 
-## 6. Próximo paso
+| Tarea | Estado |
+|---|---|
+| Datos: 834 jugadores AFA con rating, atributos y valor FIFA | Hecho |
+| Motor de partido y torneo (liga de 31, cuadro de 16, penales) calibrado con el Clausura 2026 real | Hecho |
+| Armado con presupuesto (€103M), mercado, filtros, recomendador y "Al azar" | Hecho |
+| Diseño escritorio y diseño app por separado | Hecho |
+| Simulación rápida y lenta (tiempo real, 2x, 4x, partido a partido) | Hecho |
+| Publicación en GitHub Pages | Hecho |
 
-Elegir la fuente del puntaje (A1 o A2) y confirmar la banda de empate (B). Con eso se fija la fórmula y se puede empezar la tarea 3.
+### v2 — Partidos más ricos · 45%
 
-## 7. Versión 3: modo presupuesto (decidido)
+| # | Tarea | Estado |
+|---|---|---|
+| 1 | Relato minuto a minuto (remates, atajadas, corners, asistencias…) | Hecho |
+| 2 | Ficha del partido: estadísticas comparadas | Hecho |
+| 3 | Formaciones 11 vs 11 con figura del partido | Hecho |
+| 4 | Suplentes en el partido: entra el del banco por suspensión (4 amarillas o roja = 1 fecha) | Hecho |
+| 5 | Mentalidad (defensiva / equilibrada / ofensiva) y capitán | Pendiente |
+| 6 | Fatiga y rachas | Pendiente |
+| 7 | Puntos tipo fantasy en la ficha (tabla fija sobre los eventos, sin notas inventadas) | Pendiente |
+| 8 | Revisar reglamento Gran DT y simulador Copero para ideas | Pendiente |
+| 9 | Selector de temporada con los otros Excel (requiere ratings FIFA de cada año) | Pendiente |
+| 10 | Pendientes chicos: que "Al azar" use más presupuesto, borrar `tools/prueba_interfaz.js` (obsoleto), decidir Gabriel Ávalos (agente libre en FC27) | Pendiente |
 
-- **Qué es:** el jugador recibe un presupuesto inicial y arma su 11 ideal buscando jugadores entre los equipos. Sin ruleta.
-- **Medida del presupuesto:** valor de mercado (€) de cada jugador según fifaindex (columna "Valor" de las páginas de equipo).
-- **Presupuesto inicial:** 60% del costo del mejor 11 posible de la liga (el de mayor puntaje sin importar el precio).
-- **Piso de control:** verificar que con ese presupuesto se pueda armar un 11 razonable.
-- **Ajuste:** el porcentaje se puede subir o bajar según las pruebas.
-- **Datos necesarios:** edad y país (AFA o fifaindex), valor y salario (fifaindex, páginas de equipo). Pendiente traer la columna de valor a `data/`.
-- **Pendiente antes de arrancar:** terminar el puntaje por atributos (lote de fifaindex interrumpido), porque el costo del 11 perfecto depende del puntaje final.
+### v3 — App para celular (APK) · 0%
+
+A confirmar alcance.
+
+### v4 — Modo amigos · 0% (diseño listo)
+
+Cuentas con Google, grupos con invitación, equipos únicos por pujas, liga simulada con horario elegido por el grupo y modo "Fecha real" con puntos reales. Diseño completo en el documento "11 Ideal — Diseño del modo amigos".

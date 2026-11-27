@@ -507,7 +507,8 @@
     var excluidos = {};
     todosLosCasilleros().forEach(function (c) { if (c.jugador) excluidos[c.jugador.jugador] = true; });
     var clubes = M.construirClubes(JUG, TORNEO, excluidos);
-    var nuestro = { nombre: "Nosotros", esNuestro: true, once: titulares, puntaje: M.puntajeOnce(titulares) };
+    var banco = estado.suplentes.map(function (c) { return c.jugador; }).filter(Boolean);
+    var nuestro = { nombre: "Nosotros", esNuestro: true, once: titulares, banco: banco, puntaje: M.puntajeOnce(titulares) };
     detenerReloj();
     estado.res = M.simularTorneo({ clubes: clubes, nuestro: nuestro, rng: M.crearRng((Date.now() ^ 0x9e3779b9) >>> 0) });
     estado.modo = "rapida";
@@ -589,7 +590,7 @@
 
   // ---------- Relato, estadisticas y formaciones de un partido ----------
   var R = window.RelatoOnceIdeal;
-  var ICONO = { gol: "⚽", atajada: "🧤", palo: "🥅", afuera: "↗", corner: "⛳", offside: "🚩", amarilla: "🟨", roja: "🟥", inicio: "▶", pausa: "⏸", final: "🏁" };
+  var ICONO = { gol: "⚽", atajada: "🧤", palo: "🥅", afuera: "↗", corner: "⛳", offside: "🚩", baja: "🚫", amarilla: "🟨", roja: "🟥", inicio: "▶", pausa: "⏸", final: "🏁" };
   var PESTANAS = [["relato", "Relato"], ["estadisticas", "Estadísticas"], ["formaciones", "Formaciones"]];
   var FILAS_STATS = [
     ["remates", "Remates"], ["alArco", "Remates al arco"], ["atajadas", "Atajadas"], ["corners", "Córners"],
@@ -597,12 +598,18 @@
   ];
 
   function relatoDe(p) {
-    if (!p._relato) p._relato = R.generar(p, estado.res.equipos[p.local], estado.res.equipos[p.visitante]);
+    if (!p._relato) {
+      var aL = p.alineacionL || estado.res.equipos[p.local], aV = p.alineacionV || estado.res.equipos[p.visitante];
+      p._relato = R.generar(p, aL, aV);
+      p._relato.alineaciones = {};
+      p._relato.alineaciones[p.local] = aL;
+      p._relato.alineaciones[p.visitante] = aV;
+    }
     return p._relato;
   }
   // El relato hasta un minuto dado (para el partido en vivo).
   function recorte(rel, minuto) {
-    return { lineas: rel.lineas.filter(function (l) { return l.minuto <= minuto; }), local: rel.local, visitante: rel.visitante, posesionL: rel.posesionL };
+    return { lineas: rel.lineas.filter(function (l) { return l.minuto <= minuto; }), local: rel.local, visitante: rel.visitante, posesionL: rel.posesionL, alineaciones: rel.alineaciones };
   }
   function colorEquipo(nombre) {
     if (nombre === "Nosotros") return ["#2ecc71", "#0e0f12"];
@@ -649,7 +656,7 @@
   function formacionesHTML(rel) {
     var part = R.participacion(rel), fig = R.figura(rel);
     function columna(nombre) {
-      var eq = estado.res.equipos[nombre];
+      var eq = (rel.alineaciones && rel.alineaciones[nombre]) || estado.res.equipos[nombre];
       var html = "<div class=\"once-col\"><div class=\"once-cabecera\">" + etiquetaEquipo(nombre) +
         "<span class=\"once-total\" title=\"Puntaje del equipo\">" + Math.round(eq.puntaje) + "</span></div>";
       ["ARQ", "DEF", "VOL", "DEL"].forEach(function (pos) {
@@ -664,6 +671,9 @@
           html += "<div class=\"once-fila" + (esFig ? " figura" : "") + (x.rojas ? " expulsado" : "") + "\"><span class=\"once-pos\">" + pos + "</span>" +
             "<span class=\"once-nombre\">" + esc(j.jugador) + (esFig ? " ⭐" : "") + "</span><span class=\"once-ic\">" + ic + "</span><span class=\"once-pts\">" + puntaje(j) + "</span></div>";
         });
+      });
+      (eq.bajas || []).forEach(function (b) {
+        html += "<div class=\"once-baja\">🚫 " + esc(b.sale) + " (suspendido) · entra " + esc(b.entra) + "</div>";
       });
       return html + "</div>";
     }

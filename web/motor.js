@@ -99,20 +99,23 @@
       var plantel = porEquipo[equipo];
       var titulares = [];
       var sobrantes = [];
+      var banco = [];
       POSICIONES.forEach(function (pos) {
         var lista = ordenar(plantel.filter(function (j) { return j.pos === pos; }));
         var n = FORMACION[pos];
         titulares = titulares.concat(lista.slice(0, n));
         sobrantes = sobrantes.concat(lista.slice(n));
+        banco = banco.concat(lista.slice(n, n + BANCO[pos]));
       });
       // Si una posicion no alcanza, se completa con los jugadores de mas partidos.
       var faltan = 11 - titulares.length;
       if (faltan > 0) {
         var extra = ordenar(sobrantes).slice(0, faltan);
         titulares = titulares.concat(extra);
+        banco = banco.filter(function (j) { return extra.indexOf(j) === -1; });
       }
       if (titulares.length === 11) {
-        clubes.push({ nombre: equipo, esNuestro: false, once: titulares, puntaje: puntajeOnce(titulares) });
+        clubes.push({ nombre: equipo, esNuestro: false, once: titulares, banco: banco, puntaje: puntajeOnce(titulares) });
       }
     });
     return clubes;
@@ -220,6 +223,62 @@
     return { resultado: res, golesL: gL, golesV: gV, eventos: eventos };
   }
 
+  // ---------- Sanciones ----------
+  // 4 amarillas acumuladas o una roja = 1 partido de suspension (liga y cuadro).
+  // El suspendido lo reemplaza el primer suplente libre de su puesto (o de cualquier puesto).
+  function crearSanciones() { return {}; }
+  function sancionesDe(sanc, equipo) {
+    return (sanc[equipo.nombre] = sanc[equipo.nombre] || { amarillas: {}, suspendidos: {} });
+  }
+  function alinear(equipo, sanc) {
+    if (!sanc) return equipo;
+    var s = sancionesDe(sanc, equipo);
+    if (!equipo.once.some(function (j) { return s.suspendidos[j.jugador]; })) return equipo;
+    var usados = {};
+    equipo.once.forEach(function (j) { usados[j.jugador] = true; });
+    var banco = (equipo.banco || []).filter(function (j) { return !s.suspendidos[j.jugador]; });
+    var bajas = [];
+    var once = equipo.once.map(function (j) {
+      if (!s.suspendidos[j.jugador]) return j;
+      var libres = banco.filter(function (b) { return !usados[b.jugador]; });
+      var entra = libres.filter(function (b) { return b.pos === j.pos; })[0] || libres[0];
+      if (!entra) return j;
+      usados[entra.jugador] = true;
+      bajas.push({ sale: j.jugador, entra: entra.jugador, pos: j.pos });
+      return entra;
+    });
+    if (!bajas.length) return equipo;
+    return { nombre: equipo.nombre, esNuestro: equipo.esNuestro, once: once, banco: equipo.banco, puntaje: puntajeOnce(once), bajas: bajas };
+  }
+  function registrarSanciones(sanc, equipo, eventos) {
+    if (!sanc) return;
+    var s = sancionesDe(sanc, equipo);
+    // Todas las suspensiones duran un partido del equipo: con este quedan cumplidas.
+    s.suspendidos = {};
+    eventos.forEach(function (e) {
+      if (e.equipo !== equipo.nombre) return;
+      if (e.tipo === "amarilla") {
+        s.amarillas[e.jugador] = (s.amarillas[e.jugador] || 0) + 1;
+        if (s.amarillas[e.jugador] >= 4) { s.amarillas[e.jugador] = 0; s.suspendidos[e.jugador] = true; }
+      } else if (e.tipo === "roja") {
+        s.suspendidos[e.jugador] = true;
+      }
+    });
+  }
+  // Partido oficial: aplica suspensiones antes y las actualiza despues.
+  function jugarOficial(local, visitante, rng, sanc) {
+    var alL = alinear(local, sanc), alV = alinear(visitante, sanc);
+    var pr = jugarPartido(alL, alV, rng);
+    registrarSanciones(sanc, local, pr.eventos);
+    registrarSanciones(sanc, visitante, pr.eventos);
+    pr.alL = alL; pr.alV = alV;
+    return pr;
+  }
+  function registroPartido(local, visitante, pr) {
+    return { local: local.nombre, visitante: visitante.nombre, golesL: pr.golesL, golesV: pr.golesV, resultado: pr.resultado,
+      eventos: pr.eventos, alineacionL: pr.alL || local, alineacionV: pr.alV || visitante };
+  }
+
   function partido(local, visitante, rng) {
     return jugarPartido(local, visitante, rng).resultado;
   }
@@ -263,24 +322,24 @@
   }
 
   // Partido unico. Si empata, se define por penales. Devuelve el ganador (objeto equipo).
-  function partidoUnico(a, b, rng) {
-    var pr = jugarPartido(a, b, rng);
+  function partidoUnico(a, b, rng, sanc) {
+    var pr = jugarOficial(a, b, rng, sanc);
     var ganador;
     if (pr.resultado === "L") ganador = a;
     else if (pr.resultado === "V") ganador = b;
-    else ganador = penales(a, b, rng) === "L" ? a : b;
+    else ganador = penales(pr.alL, pr.alV, rng) === "L" ? a : b;
     return {
       ganador: ganador,
       perdedor: ganador === a ? b : a,
-      partido: { local: a.nombre, visitante: b.nombre, golesL: pr.golesL, golesV: pr.golesV, resultado: pr.resultado, eventos: pr.eventos }
+      partido: registroPartido(a, b, pr)
     };
   }
 
   // Ida y vuelta: a juega de local en la ida y b en la vuelta.
   // Gana quien gane mas partidos; si quedan 1-1 (o dos empates), penales.
-  function llaveIdaVuelta(a, b, rng) {
-    var idaPr = jugarPartido(a, b, rng);    // a local
-    var vueltaPr = jugarPartido(b, a, rng); // b local
+  function llaveIdaVuelta(a, b, rng, sanc) {
+    var idaPr = jugarOficial(a, b, rng, sanc);    // a local
+    var vueltaPr = jugarOficial(b, a, rng, sanc); // b local
     var ida = idaPr.resultado;
     var vuelta = vueltaPr.resultado;
     var victoriasA = (ida === "L" ? 1 : 0) + (vuelta === "V" ? 1 : 0);
@@ -288,12 +347,12 @@
     var ganador;
     if (victoriasA > victoriasB) ganador = a;
     else if (victoriasB > victoriasA) ganador = b;
-    else ganador = penales(a, b, rng) === "L" ? a : b;
+    else ganador = penales(vueltaPr.alV, vueltaPr.alL, rng) === "L" ? a : b;
     return {
       ganador: ganador,
       perdedor: ganador === a ? b : a,
-      ida: { local: a.nombre, visitante: b.nombre, golesL: idaPr.golesL, golesV: idaPr.golesV, resultado: ida, eventos: idaPr.eventos },
-      vuelta: { local: b.nombre, visitante: a.nombre, golesL: vueltaPr.golesL, golesV: vueltaPr.golesV, resultado: vuelta, eventos: vueltaPr.eventos }
+      ida: registroPartido(a, b, idaPr),
+      vuelta: registroPartido(b, a, vueltaPr)
     };
   }
 
@@ -321,7 +380,7 @@
     return fechas.concat(vuelta);
   }
 
-  function jugarLiga(equipos, rng, registro) {
+  function jugarLiga(equipos, rng, registro, sanc) {
     var tabla = {};
     equipos.forEach(function (e) {
       tabla[e.nombre] = { equipo: e, pj: 0, pg: 0, pe: 0, pp: 0, pts: 0, puntajeTotal: 0 };
@@ -330,18 +389,12 @@
     fechas.forEach(function (fecha, indiceFecha) {
       fecha.forEach(function (p) {
         var local = p[0], visitante = p[1];
-        var pr = jugarPartido(local, visitante, rng);
+        var pr = jugarOficial(local, visitante, rng, sanc);
         var r = pr.resultado;
         if (registro) {
-          registro.push({
-            fecha: indiceFecha + 1,
-            local: local.nombre,
-            visitante: visitante.nombre,
-            golesL: pr.golesL,
-            golesV: pr.golesV,
-            resultado: r,
-            eventos: pr.eventos
-          });
+          var reg = registroPartido(local, visitante, pr);
+          reg.fecha = indiceFecha + 1;
+          registro.push(reg);
         }
         var tl = tabla[local.nombre], tv = tabla[visitante.nombre];
         tl.pj++; tv.pj++;
@@ -378,7 +431,8 @@
     var rng = opciones.rng || crearRng();
     var equipos = opciones.clubes.concat([opciones.nuestro]);
     var partidosLiga = [];
-    var tabla = jugarLiga(equipos, rng, partidosLiga);
+    var sanc = opciones.sinSanciones ? null : crearSanciones();
+    var tabla = jugarLiga(equipos, rng, partidosLiga, sanc);
     var nuestraPosicion = tabla.findIndex(function (f) { return f.equipo.esNuestro; }) + 1;
     var resultado = {
       tabla: tabla,
@@ -399,7 +453,7 @@
     var ganadores = [];
     var ronda = { nombre: nombreRonda(16), llaves: [] };
     llaves.forEach(function (p) {
-      var r = llaveIdaVuelta(p[0], p[1], rng);
+      var r = llaveIdaVuelta(p[0], p[1], rng, sanc);
       ronda.llaves.push(detalleLlave(p, r));
       ganadores.push(r.ganador);
     });
@@ -409,23 +463,23 @@
     var cuartos = [];
     ronda = { nombre: "Cuartos de final", llaves: [] };
     for (var i = 0; i < 8; i += 2) {
-      var r2 = llaveIdaVuelta(ganadores[i], ganadores[i + 1], rng);
+      var r2 = llaveIdaVuelta(ganadores[i], ganadores[i + 1], rng, sanc);
       ronda.llaves.push(detalleLlave([ganadores[i], ganadores[i + 1]], r2));
       cuartos.push(r2.ganador);
     }
     resultado.rondas.push(ronda);
 
     // Semifinales: X = ganador(AB) vs ganador(CD); Y = ganador(EF) vs ganador(GH)
-    var rX = llaveIdaVuelta(cuartos[0], cuartos[1], rng);
-    var rY = llaveIdaVuelta(cuartos[2], cuartos[3], rng);
+    var rX = llaveIdaVuelta(cuartos[0], cuartos[1], rng, sanc);
+    var rY = llaveIdaVuelta(cuartos[2], cuartos[3], rng, sanc);
     resultado.rondas.push({
       nombre: "Semifinales",
       llaves: [detalleLlave([cuartos[0], cuartos[1]], rX), detalleLlave([cuartos[2], cuartos[3]], rY)]
     });
 
     // Final (partido unico) y tercer puesto (partido unico)
-    var final = partidoUnico(rX.ganador, rY.ganador, rng);
-    var tercerPuesto = partidoUnico(rX.perdedor, rY.perdedor, rng);
+    var final = partidoUnico(rX.ganador, rY.ganador, rng, sanc);
+    var tercerPuesto = partidoUnico(rX.perdedor, rY.perdedor, rng, sanc);
     var campeon = final.ganador;
     var subcampeon = final.perdedor;
     var tercero = tercerPuesto.ganador;
@@ -488,6 +542,8 @@
     puntajeOnce: puntajeOnce,
     partido: partido,
     jugarPartido: jugarPartido,
+    jugarOficial: jugarOficial,
+    crearSanciones: crearSanciones,
     penales: penales,
     llaveIdaVuelta: llaveIdaVuelta,
     calendario: calendario,
