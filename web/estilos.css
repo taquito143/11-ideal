@@ -655,7 +655,12 @@ main { padding-bottom: 96px; }
 .once-fila.figura .once-nombre { color: var(--verde); font-weight: 700; }
 .once-fila.expulsado .once-nombre { color: var(--rojo); text-decoration: line-through; }
 .once-baja { font-size: 0.78rem; color: var(--gris); padding: 4px 0 0; overflow-wrap: anywhere; }
-.evento.baja, .evento.planteo { color: var(--gris); }
+.evento.baja, .evento.planteo, .evento.rotacion, .evento.racha { color: var(--gris); }
+.bateria { display: inline-block; vertical-align: middle; width: 22px; height: 8px; margin-left: 6px; border: 1px solid var(--gris); border-radius: 2px; position: relative; }
+.bateria > span { display: block; height: 100%; background: var(--verde); }
+.bateria.media > span { background: #f5c542; }
+.bateria.baja > span { background: var(--rojo); }
+.brazalete-mini { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border-radius: 50%; background: #f5c542; color: #111; font-size: 0.6rem; font-weight: 800; vertical-align: middle; }
 .nuestros-partidos { display: flex; flex-direction: column; gap: 6px; max-height: 420px; overflow-y: auto; }
 .fila-partido { display: grid; grid-template-columns: 28px 1fr auto; grid-template-areas: "res titulo ir" "res marcador ir"; align-items: center; column-gap: 10px; text-align: left; background: var(--tarjeta2); border: 1px solid var(--borde); border-radius: 10px; padding: 8px 10px; color: var(--texto); font: inherit; cursor: pointer; }
 .fila-partido:hover { border-color: var(--verde); }

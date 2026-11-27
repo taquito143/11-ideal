@@ -210,6 +210,20 @@
       });
     });
 
+    // Rotaciones por cansancio y rachas (las decide el motor antes del partido).
+    var NOMBRE_RACHA = { G: ["victoria", "victorias"], P: ["derrota", "derrotas"], E: ["empate", "empates"] };
+    lados.forEach(function (lado) {
+      (lado.eq.rotaciones || []).forEach(function (r) {
+        lineas.push({ minuto: 0, orden: -1, tipo: "rotacion", equipo: lado.nombre,
+          texto: "Rotación por cansancio: descansa " + r.sale + " y juega " + r.entra + "." });
+      });
+      var ra = lado.eq.racha;
+      if (ra && ra.n >= 3 && NOMBRE_RACHA[ra.tipo]) {
+        lineas.push({ minuto: 0, orden: -1, tipo: "racha", equipo: lado.nombre,
+          texto: "Llega con " + ra.n + " " + NOMBRE_RACHA[ra.tipo][1] + " seguidas." });
+      }
+    });
+
     // Planteo de cada equipo (si no es el equilibrado).
     var PLANTEO = { defensiva: "Sale a cerrarse atrás con un planteo defensivo", ofensiva: "Sale a buscar el partido con un planteo ofensivo" };
     lados.forEach(function (lado) {

@@ -619,7 +619,7 @@
 
   // ---------- Relato, estadisticas y formaciones de un partido ----------
   var R = window.RelatoOnceIdeal;
-  var ICONO = { gol: "⚽", atajada: "🧤", palo: "🥅", afuera: "↗", corner: "⛳", offside: "🚩", baja: "🚫", planteo: "📋", amarilla: "🟨", roja: "🟥", inicio: "▶", pausa: "⏸", final: "🏁" };
+  var ICONO = { gol: "⚽", atajada: "🧤", palo: "🥅", afuera: "↗", corner: "⛳", offside: "🚩", baja: "🚫", rotacion: "🔄", racha: "📈", planteo: "📋", amarilla: "🟨", roja: "🟥", inicio: "▶", pausa: "⏸", final: "🏁" };
   var PESTANAS = [["relato", "Relato"], ["estadisticas", "Estadísticas"], ["formaciones", "Formaciones"]];
   var FILAS_STATS = [
     ["remates", "Remates"], ["alArco", "Remates al arco"], ["atajadas", "Atajadas"], ["corners", "Córners"],
@@ -697,12 +697,19 @@
           if (x.rojas) ic += "🟥";
           if (x.atajadas) ic += "🧤" + x.atajadas;
           var esFig = fig && fig.equipo === nombre && fig.jugador === j.jugador;
+          var energia = eq.cansancio ? 100 - (eq.cansancio[j.jugador] || 0) : null;
+          var bateria = energia == null ? "" : "<span class=\"bateria" + (energia < 40 ? " baja" : energia < 70 ? " media" : "") +
+            "\" title=\"Energía " + energia + "%\"><span style=\"width:" + energia + "%\"></span></span>";
           html += "<div class=\"once-fila" + (esFig ? " figura" : "") + (x.rojas ? " expulsado" : "") + "\"><span class=\"once-pos\">" + pos + "</span>" +
-            "<span class=\"once-nombre\">" + esc(j.jugador) + (esFig ? " ⭐" : "") + "</span><span class=\"once-ic\">" + ic + "</span><span class=\"once-pts\">" + puntaje(j) + "</span></div>";
+            "<span class=\"once-nombre\">" + esc(j.jugador) + (esFig ? " ⭐" : "") + (j.jugador === eq.capitan ? " <span class=\"brazalete-mini\">C</span>" : "") + bateria +
+            "</span><span class=\"once-ic\">" + ic + "</span><span class=\"once-pts\">" + puntaje(j) + "</span></div>";
         });
       });
       (eq.bajas || []).forEach(function (b) {
         html += "<div class=\"once-baja\">🚫 " + esc(b.sale) + " (suspendido) · entra " + esc(b.entra) + "</div>";
+      });
+      (eq.rotaciones || []).forEach(function (b) {
+        html += "<div class=\"once-baja\">🔄 " + esc(b.sale) + " descansa · entra " + esc(b.entra) + "</div>";
       });
       return html + "</div>";
     }
@@ -716,7 +723,7 @@
         (logros.length ? " <span class=\"gris\">(" + logros.join(", ") + ")</span>" : "") + "</div>";
     }
     return html + "<div class=\"once-vs\">" + columna(rel.local) + columna(rel.visitante) + "</div>" +
-      "<p class=\"ayuda\">El número es el puntaje FIFA de cada jugador. ⚽ gol · 👟 asistencia · 🧤 atajadas.</p>";
+      "<p class=\"ayuda\">El número es el puntaje FIFA de cada jugador. La barra es su energía: con mucho cansancio rinde hasta un 10% menos. ⚽ gol · 👟 asistencia · 🧤 atajadas.</p>";
   }
 
   function contenidoFicha(pestana, rel, extras) {

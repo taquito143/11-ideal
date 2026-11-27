@@ -56,7 +56,7 @@
   }
   function fuerza(equipo) {
     var c = capitanEnCancha(equipo);
-    return equipo.puntaje + (c ? CONFIG.bonusCapitan * (c.promedio || 0) : 0);
+    return (equipo.puntaje + (c ? CONFIG.bonusCapitan * (c.promedio || 0) : 0)) * (1 + (equipo.ajusteRacha || 0));
   }
 
   // ---------- Azar reproducible (mulberry32) ----------
@@ -260,30 +260,70 @@
   // El suspendido lo reemplaza el primer suplente libre de su puesto (o de cualquier puesto).
   function crearSanciones() { return {}; }
   function sancionesDe(sanc, equipo) {
-    return (sanc[equipo.nombre] = sanc[equipo.nombre] || { amarillas: {}, suspendidos: {} });
+    return (sanc[equipo.nombre] = sanc[equipo.nombre] || { amarillas: {}, suspendidos: {}, cansancio: {}, racha: null });
   }
+  // ---------- Fatiga ----------
+  // Cada jugador tiene un cansancio de 0 a 100 durante la temporada.
+  //  - Si juega:      cansancio = cansancio * retencion + carga
+  //  - Si no juega:   cansancio = cansancio * descanso
+  // Pasado el umbral, rinde menos: hasta -penalidadMax con cansancio 100.
+  var FATIGA = { carga: 14, retencion: 0.85, descanso: 0.35, umbral: 40, penalidadMax: 0.10, margenRotacion: 0.5 };
+  // Racha: +1% por cada victoria seguida despues de la primera (tope 3%), lo mismo negativo con derrotas.
+  var RACHA = { paso: 0.01, tope: 0.03 };
+
+  function penalidadFatiga(c) {
+    return Math.max(0, (c || 0) - FATIGA.umbral) / (100 - FATIGA.umbral) * FATIGA.penalidadMax;
+  }
+  function rendimiento(j, cansancio) { return (j.promedio || 0) * (1 - penalidadFatiga(cansancio[j.jugador])); }
+  function ajusteRacha(r) {
+    if (!r || r.n < 2) return 0;
+    var v = Math.min(RACHA.tope, (r.n - 1) * RACHA.paso);
+    return r.tipo === "G" ? v : r.tipo === "P" ? -v : 0;
+  }
+
+  // Once que sale a la cancha: cubre suspendidos y rota a los cansados si hay un suplente que rinda mas.
   function alinear(equipo, sanc) {
     if (!sanc) return equipo;
-    var s = sancionesDe(sanc, equipo);
-    if (!equipo.once.some(function (j) { return s.suspendidos[j.jugador]; })) return equipo;
+    var s = sancionesDe(sanc, equipo), c = s.cansancio;
     var usados = {};
     equipo.once.forEach(function (j) { usados[j.jugador] = true; });
     var banco = (equipo.banco || []).filter(function (j) { return !s.suspendidos[j.jugador]; });
-    var bajas = [];
+    var bajas = [], rotaciones = [];
+    function libres() { return banco.filter(function (b) { return !usados[b.jugador]; }); }
     var once = equipo.once.map(function (j) {
       if (!s.suspendidos[j.jugador]) return j;
-      var libres = banco.filter(function (b) { return !usados[b.jugador]; });
-      var entra = libres.filter(function (b) { return b.pos === j.pos; })[0] || libres[0];
+      var l = libres();
+      var entra = l.filter(function (b) { return b.pos === j.pos; })[0] || l[0];
       if (!entra) return j;
       usados[entra.jugador] = true;
       bajas.push({ sale: j.jugador, entra: entra.jugador, pos: j.pos });
       return entra;
     });
-    if (!bajas.length) return equipo;
-    return { nombre: equipo.nombre, esNuestro: equipo.esNuestro, once: once, banco: equipo.banco, puntaje: puntajeOnce(once), bajas: bajas,
-      capitan: equipo.capitan, mentalidad: equipo.mentalidad };
+    if (!sanc.sinFatiga) {
+      once = once.map(function (j) {
+        var propio = rendimiento(j, c);
+        if (propio >= (j.promedio || 0)) return j;   // no esta cansado
+        var mejor = null, mejorValor = propio + FATIGA.margenRotacion;
+        libres().forEach(function (b) {
+          if (b.pos !== j.pos) return;
+          var v = rendimiento(b, c);
+          if (v > mejorValor) { mejor = b; mejorValor = v; }
+        });
+        if (!mejor) return j;
+        usados[mejor.jugador] = true;
+        rotaciones.push({ sale: j.jugador, entra: mejor.jugador, pos: j.pos });
+        return mejor;
+      });
+    }
+    var puntaje = once.reduce(function (t, j) { return t + (sanc.sinFatiga ? (j.promedio || 0) : rendimiento(j, c)); }, 0);
+    var cansancioOnce = {};
+    once.forEach(function (j) { cansancioOnce[j.jugador] = Math.round(c[j.jugador] || 0); });
+    return { nombre: equipo.nombre, esNuestro: equipo.esNuestro, once: once, banco: equipo.banco, puntaje: puntaje,
+      puntajeNominal: puntajeOnce(once), bajas: bajas, rotaciones: rotaciones, cansancio: cansancioOnce,
+      capitan: equipo.capitan, mentalidad: equipo.mentalidad,
+      racha: s.racha ? { tipo: s.racha.tipo, n: s.racha.n } : null, ajusteRacha: sanc.sinRachas ? 0 : ajusteRacha(s.racha) };
   }
-  function registrarSanciones(sanc, equipo, eventos) {
+  function registrarSanciones(sanc, equipo, alineado, eventos, resultadoPropio) {
     if (!sanc) return;
     var s = sancionesDe(sanc, equipo);
     // Todas las suspensiones duran un partido del equipo: con este quedan cumplidas.
@@ -297,13 +337,24 @@
         s.suspendidos[e.jugador] = true;
       }
     });
+    // Cansancio: suben los que jugaron, se recuperan los demas.
+    var jugo = {};
+    alineado.once.forEach(function (j) { jugo[j.jugador] = true; });
+    equipo.once.concat(equipo.banco || []).forEach(function (j) {
+      var v = s.cansancio[j.jugador] || 0;
+      s.cansancio[j.jugador] = jugo[j.jugador] ? Math.min(100, v * FATIGA.retencion + FATIGA.carga) : v * FATIGA.descanso;
+    });
+    // Racha
+    if (s.racha && s.racha.tipo === resultadoPropio) s.racha.n++;
+    else s.racha = { tipo: resultadoPropio, n: 1 };
   }
-  // Partido oficial: aplica suspensiones antes y las actualiza despues.
+  // Partido oficial: aplica suspensiones, fatiga y racha antes, y las actualiza despues.
   function jugarOficial(local, visitante, rng, sanc) {
     var alL = alinear(local, sanc), alV = alinear(visitante, sanc);
     var pr = jugarPartido(alL, alV, rng);
-    registrarSanciones(sanc, local, pr.eventos);
-    registrarSanciones(sanc, visitante, pr.eventos);
+    var r = pr.resultado;
+    registrarSanciones(sanc, local, alL, pr.eventos, r === "L" ? "G" : r === "V" ? "P" : "E");
+    registrarSanciones(sanc, visitante, alV, pr.eventos, r === "V" ? "G" : r === "L" ? "P" : "E");
     pr.alL = alL; pr.alV = alV;
     return pr;
   }
@@ -465,6 +516,10 @@
     var equipos = opciones.clubes.concat([opciones.nuestro]);
     var partidosLiga = [];
     var sanc = opciones.sinSanciones ? null : crearSanciones();
+    if (sanc) {
+      Object.defineProperty(sanc, "sinFatiga", { value: !!opciones.sinFatiga });
+      Object.defineProperty(sanc, "sinRachas", { value: !!opciones.sinRachas });
+    }
     var tabla = jugarLiga(equipos, rng, partidosLiga, sanc);
     var nuestraPosicion = tabla.findIndex(function (f) { return f.equipo.esNuestro; }) + 1;
     var resultado = {
@@ -580,6 +635,8 @@
     jugarPartido: jugarPartido,
     jugarOficial: jugarOficial,
     crearSanciones: crearSanciones,
+    FATIGA: FATIGA,
+    RACHA: RACHA,
     penales: penales,
     llaveIdaVuelta: llaveIdaVuelta,
     calendario: calendario,
