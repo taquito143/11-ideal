@@ -86,7 +86,7 @@ Además, el ejemplo práctico de la respuesta usa pesos por **categoría** (Tiro
 | Simulación rápida y lenta (tiempo real, 2x, 4x, partido a partido) | Hecho |
 | Publicación en GitHub Pages | Hecho |
 
-### v2 — Partidos más ricos · 75%
+### v2 — Partidos más ricos · 85%
 
 | # | Tarea | Estado |
 |---|---|---|
@@ -99,7 +99,7 @@ Además, el ejemplo práctico de la respuesta usa pesos por **categoría** (Tiro
 | 7 | Puntos tipo fantasy en la ficha (tabla fija sobre los eventos, sin notas inventadas) | Hecho |
 | 8 | Revisar reglamento Gran DT y simulador Copero para ideas | Pendiente |
 | 9 | Selector de temporada con los otros Excel (requiere ratings FIFA de cada año) | Pendiente |
-| 10 | Pendientes chicos: "Al azar" usa casi todo el presupuesto (hecho), borrar `tools/prueba_interfaz.js` (hecho), decidir Gabriel Ávalos (agente libre en FC27, sin valor FIFA) | Falta Ávalos |
+| 10 | Pendientes chicos: "Al azar" usa casi todo el presupuesto, borrar `tools/prueba_interfaz.js`, Gabriel Ávalos queda fuera (agente libre en FC27, sin valor FIFA) | Hecho |
 
 ### v3 — App para celular (APK) · 0%
 
